@@ -1,0 +1,26 @@
+.kodyt-checkout-container {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #1e293b;
+    margin: 20px auto;
+    max-width: 1200px;
+    box-sizing: border-box;
+}
+.kodyt-checkout-container *,
+.kodyt-checkout-container *::before,
+.kodyt-checkout-container *::after {
+    box-sizing: border-box;
+}
+.kodyt-checkout-container input[type="text"],
+.kodyt-checkout-container input[type="tel"],
+.kodyt-checkout-container input[type="email"] {
+    width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px;
+    font-size: 14px; box-sizing: border-box; transition: border 0.2s ease; height: 46px;
+}
+.kodyt-checkout-container input:focus { outline: none; border-color: #6366f1; }
+.kodyt-checkout-container button {
+    background-color: #6366f1; color: #ffffff; padding: 12px 20px; border-radius: 8px;
+    border: none; font-weight: 600; cursor: pointer; transition: background 0.2s ease;
+    font-size: 14px; height: 46px; display: inline-flex; align-items: center; justify-content: center;
+}
+.kodyt-checkout-container button:hover { background-color: #4f46e5; }
+.kodyt-grid { display: grid; grid-template-columns: 7fr 5fr; gap: 30px; align-items: start; }

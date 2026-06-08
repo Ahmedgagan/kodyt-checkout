@@ -1,0 +1,521 @@
+.kodyt-checkout-container {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #1e293b;
+    margin: 20px auto;
+    max-width: 1200px;
+    box-sizing: border-box;
+}
+
+.kodyt-checkout-container *,
+.kodyt-checkout-container *::before,
+.kodyt-checkout-container *::after {
+    box-sizing: border-box;
+}
+
+.kodyt-checkout-container input[type="text"],
+.kodyt-checkout-container input[type="tel"],
+.kodyt-checkout-container input[type="email"] {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border 0.2s ease;
+    height: 46px;
+}
+
+.kodyt-checkout-container input:focus {
+    outline: none;
+    border-color: #6366f1;
+}
+
+.kodyt-checkout-container button {
+    background-color: #6366f1;
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 14px;
+    height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kodyt-checkout-container button:hover {
+    background-color: #4f46e5;
+}
+
+.kodyt-grid {
+    display: grid;
+    grid-template-columns: 7fr 5fr;
+    gap: 30px;
+    align-items: start;
+}
+
+.kodyt-step {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+}
+
+.kodyt-step.active {
+    border-color: #6366f1;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.08);
+    pointer-events: auto !important;
+}
+
+.kodyt-step.locked .kodyt-step-body {
+    display: none;
+}
+
+.kodyt-step.locked {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.kodyt-step.completed {
+    border-color: #22c55e;
+}
+
+.kodyt-step-header h5 {
+    margin: 0 0 15px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.kodyt-form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.kodyt-form-row input {
+    flex: 1;
+}
+
+.kodyt-input-group {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.kodyt-input-group input[type="tel"],
+.kodyt-input-group input[type="text"] {
+    flex: 1 !important;
+}
+
+.kodyt-gateway-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.kodyt-summary-card {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    position: sticky;
+    top: 20px;
+}
+
+.kodyt-summary-card h4 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.kodyt-divider {
+    border: 0;
+    height: 1px;
+    background: #e2e8f0;
+    margin: 15px 0;
+}
+
+.kodyt-total-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #475569;
+}
+
+.kodyt-total-row.final-total {
+    font-size: 18px;
+    margin-top: 15px;
+    border-top: 1px dashed #cbd5e1;
+    padding-top: 15px;
+    color: #0f172a;
+}
+
+/* --- PREMIUM PLAIN-TEXT VERIFIED PHONE COMPONENT LAYOUT --- */
+.kodyt-verified-phone-container-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 14px 18px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 5px;
+}
+
+.kodyt-verified-text-details {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.kodyt-meta-eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.05em;
+    line-height: 1;
+}
+
+.kodyt-confirmed-phone-number {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: 0.2px;
+    line-height: 1.2;
+}
+
+/* =========================================================================
+   --- FIXED AUTOCOMPLETE DROPDOWN CONTAINER CONTEXT ---
+   ========================================================================= */
+.kodyt-autocomplete-wrapper {
+    position: relative !important;
+    width: 100%;
+    display: block;
+}
+
+.kodyt-suggestions-box {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    margin-top: 4px !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    max-height: 260px !important;
+    overflow-y: auto !important;
+    display: none;
+    z-index: 999999 !important;
+}
+
+.kodyt-suggestion-item {
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+    color: #334155 !important;
+    cursor: pointer !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    text-align: left !important;
+    transition: background 0.15s ease;
+}
+
+.kodyt-suggestion-item:last-child {
+    border-bottom: none !important;
+    border-radius: 0 0 8px 8px !important;
+}
+
+.kodyt-suggestion-item:hover {
+    background: #f5f3ff !important;
+    color: #6366f1 !important;
+    font-weight: 500 !important;
+}
+
+/* =========================================================================
+   --- INTERACTIVE COUPON CODE TOGGLE SECTION ---
+   ========================================================================= */
+.kodyt-coupon-integration-area {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e2e8f0;
+}
+
+#kodyt-toggle-coupon-field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 4px 0;
+    user-select: none;
+}
+
+#kodyt-toggle-coupon-field span {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6366f1;
+}
+
+#kodyt-toggle-coupon-field span:hover {
+    color: #4f46e5;
+}
+
+.kodyt-coupon-arrow {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+
+#kodyt-coupon-slide-container {
+    margin-top: 10px;
+}
+
+.kodyt-coupon-input-group {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+#kodyt-coupon-code-input {
+    flex: 1;
+    height: 38px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+
+#kodyt-btn-apply-coupon {
+    height: 38px !important;
+    padding: 0 16px !important;
+    font-size: 13px !important;
+    border-radius: 6px !important;
+    background-color: #1e293b !important;
+}
+
+#kodyt-btn-apply-coupon:hover {
+    background-color: #0f172a !important;
+}
+
+#kodyt-coupon-feedback-msg {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.kodyt-remove-coupon-link {
+    color: #ef4444;
+    font-size: 11px;
+    margin-left: 6px;
+    text-decoration: none;
+}
+
+.kodyt-remove-coupon-link:hover {
+    text-decoration: underline;
+}
+
+/* --- FIXED ORDER SUMMARY ITEMS GRID --- */
+.kodyt-summary-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.kodyt-summary-item-row {
+    display: grid !important;
+    grid-template-columns: 64px 1fr auto !important;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+}
+
+.kodyt-summary-item-thumb {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 4px;
+    flex-shrink: 0;
+}
+
+.kodyt-summary-item-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+    display: block;
+}
+
+.kodyt-summary-item-qty-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #1e293b;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+.kodyt-summary-item-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.kodyt-summary-item-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.4;
+}
+
+.kodyt-summary-item-price-wrap {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    text-align: right;
+}
+
+/* --- INTL-TEL-INPUT CONFIGURATION GUARDS --- */
+.kodyt-input-group .iti,
+#kodyt-checkout-phone-interactive-slot .iti {
+    width: 100% !important;
+    display: flex !important;
+}
+
+#kodyt-checkout-phone-interactive-slot:not(:has(input[type="tel"])) .iti {
+    display: none !important;
+}
+
+.kodyt-input-group .iti input[type="tel"],
+#kodyt-checkout-phone-interactive-slot input[type="tel"] {
+    width: 100% !important;
+    /* padding-left: 54px !important; */
+    height: 46px;
+}
+
+.iti__country-list {
+    z-index: 999999 !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+#kodyt-profile-swap-to-input:hover, #kodyt-profile-btn-trigger-action:hover {
+    cursor: pointer !important;
+    background-color: color-mix(in srgb, #000000 85%, transparent) !important;
+}
+
+.kodyt-section-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin: 0 0 12px 0;
+}
+
+.kodyt-address-card {
+    flex: 0 0 220px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.kodyt-address-type {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.kodyt-address-card strong {
+    font-size: 13px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.kodyt-address-card p {
+    font-size: 11px;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.kodyt-address-card .kodyt-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #22c55e;
+    margin-top: 8px;
+}
+
+/* --- RESPONSIVE MOBILE MEDIA QUERIES --- */
+@media (max-width: 768px) {
+    .kodyt-checkout-container {
+        padding: 0 12px;
+        margin: 10px auto;
+    }
+
+    .kodyt-grid { 
+        display: flex !important;
+        flex-direction: column-reverse !important; 
+        gap: 20px;
+    }
+
+    .kodyt-summary-card {
+        position: relative !important;
+        top: 0 !important;
+        margin-bottom: 0;
+        padding: 16px;
+    }
+
+    .kodyt-step {
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+
+    .kodyt-form-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .kodyt-input-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .kodyt-input-group button {
+        width: 100% !important;
+        padding: 12px !important;
+    }
+}

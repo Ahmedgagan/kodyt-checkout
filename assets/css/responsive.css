@@ -1,0 +1,9 @@
+@media (max-width: 768px) {
+    .kodyt-checkout-container { padding: 0 12px; margin: 10px auto; }
+    .kodyt-grid { display: flex !important; flex-direction: column-reverse !important; gap: 20px; }
+    .kodyt-summary-card { position: relative !important; top: 0 !important; padding: 16px; }
+    .kodyt-step { padding: 16px; margin-bottom: 12px; }
+    .kodyt-form-row { flex-direction: column; gap: 12px; }
+    .kodyt-input-group { flex-direction: column; gap: 8px; }
+    .kodyt-input-group button { width: 100% !important; }
+}
