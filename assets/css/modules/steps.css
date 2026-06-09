@@ -1,11 +1,39 @@
-.kodyt-step { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
-.kodyt-step.active { border-color: #6366f1; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.08); }
+.kodyt-step { 
+    background: var(--kodyt-step-bg); 
+    border: var(--kodyt-step-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); 
+    border-radius: var(--kodyt-radius); 
+    padding: var(--kodyt-step-padding); 
+    margin-bottom: 16px; 
+}
+.kodyt-step.active { 
+    border-color: var(--kodyt-primary); 
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.08); 
+}
 .kodyt-step.locked .kodyt-step-body { display: none; }
 .kodyt-step.locked { opacity: 0.5; pointer-events: none; }
-.kodyt-step.completed { border-color: #22c55e; }
-.kodyt-step-header h5 { margin: 0 0 15px 0; font-size: 18px; font-weight: 700; color: #0f172a; }
+.kodyt-step.completed { 
+    border-color: var(--kodyt-success); 
+}
+.kodyt-step-header h5 { 
+    margin: 0 0 15px 0; 
+    font-size: 18px; 
+    font-weight: 700; 
+    color: var(--kodyt-text-heading); 
+}
 .kodyt-form-row { display: flex; gap: 15px; }
 .kodyt-form-row input { flex: 1; }
 .kodyt-input-group { display: flex; gap: 10px; width: 100%; }
 .kodyt-input-group input[type="tel"], .kodyt-input-group input[type="text"] { flex: 1 !important; }
-.kodyt-gateway-row { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; cursor: pointer; font-weight: 600; font-size: 14px; }
+.kodyt-gateway-row { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    padding: 14px 16px; 
+    border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); 
+    border-radius: var(--kodyt-radius); 
+    margin-bottom: 10px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    font-size: 14px; 
+    color: var(--kodyt-text-base);
+}

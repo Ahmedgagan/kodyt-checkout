@@ -42,10 +42,10 @@ jQuery(document).ready(function($) {
         $('#kodyt-profile-phone-interactive-slot').html(`
             <div style="display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; width: 100%;">
                 <div style="flex: 1; min-width: 260px;">
-                    <input type="tel" id="kodyt_profile_phone_active" class="input-text" style="width: 100%; height: 42px;" placeholder="Enter new mobile number" />
+                    <input type="tel" id="kodyt_profile_phone_active" class="input-text" style="width: 100%; height: 42px; border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); border-radius: var(--kodyt-radius);" placeholder="Enter new mobile number" />
                 </div>
                 <div>
-                    <button type="button" id="kodyt-profile-btn-trigger-action" class="button" style="height: 42px; padding: 0 20px; white-space: nowrap; background-color: #000000; color: #ffffff; font-size: 16px;">Verify Code</button>
+                    <button type="button" id="kodyt-profile-btn-trigger-action" class="button" style="height: 42px; padding: 0 20px; white-space: nowrap; background-color: var(--kodyt-secondary); color: var(--kodyt-secondary-text); border-radius: var(--kodyt-radius); border: none; font-size: 16px; font-weight: 600;">Verify Code</button>
                 </div>
             </div>
         `);
@@ -65,7 +65,7 @@ jQuery(document).ready(function($) {
         e.preventDefault();
         let activeInput = $('#kodyt_profile_phone_active');
         if (!activeInput.length || !window.kodytProfileItiInstance) return;
-        
+
         let rawNumber = activeInput.val().trim();
         if (!rawNumber) return alert('Please enter a valid mobile number.');
 
@@ -87,6 +87,10 @@ jQuery(document).ready(function($) {
         }, 'json');
     });
 
+    $(document).on('click', '#kodyt-profile-modal-close, #kodyt-profile-modal-btn-cancel', function(e) {
+        $('#kodyt-profile-modal-overlay').css('display', 'none');
+    });
+
     $(document).on('click', '#kodyt-profile-modal-btn-verify', function() {
         let token = $('#kodyt_profile_modal_otp').val().trim();
         if (!token) return alert('Please input the verification code.');
@@ -101,8 +105,8 @@ jQuery(document).ready(function($) {
             if (response && response.success === true) {
                 $('#kodyt_profile_phone_hidden').val(targetPendingNewPhone);
                 $('#kodyt-profile-phone-interactive-slot').html(`
-                    <div style="display: flex; align-items: center; justify-content: space-between; background: #f0fdf4; padding: 12px 16px; border: 1px solid #10b981; border-radius: 6px;">
-                        <span style="font-weight: 600; color: #14532d; font-size: 14px;">+${dialCode} ${targetPendingNewPhone} (Verified)</span>
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: var(--kodyt-success); padding: 12px 16px; border: var(--kodyt-step-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); border-radius: var(--kodyt-radius);">
+                        <span style="font-weight: 600; color: var(--kodyt-success-text); font-size: 14px;">+${dialCode} ${targetPendingNewPhone} (Verified)</span>
                     </div>
                 `);
                 $('#kodyt-profile-modal-overlay').hide();

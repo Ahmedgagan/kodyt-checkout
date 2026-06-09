@@ -10,9 +10,76 @@ class Kodyt_Checkout_Core
     add_action('wp_enqueue_scripts', array($this, 'enqueue_checkout_assets'));
     add_action('woocommerce_before_customer_login_form', array($this, 'render_unified_inline_otp_login'));
     add_action('woocommerce_after_edit_account_form', array($this, 'render_profile_phone_number_section'));
-
+    add_action('wp_head', array($this, 'inject_global_design_variables'));
     add_action('wp_ajax_kodyt_process_checkout', array($this, 'process_final_checkout'));
     add_action('wp_ajax_nopriv_kodyt_process_checkout', array($this, 'process_final_checkout'));
+  }
+
+  public function inject_global_design_variables()
+  {
+    // Prevent this from rendering on administration panel dashboard screens
+    if (is_admin()) return;
+
+    // Fetch custom layout properties from options db records matching user preferences
+    $font          = get_option('kodyt_checkout_font_family', "'Inter', system-ui, -apple-system, sans-serif");
+    $base_text     = get_option('kodyt_checkout_base_text_color', '#1e293b');
+    $heading_text  = get_option('kodyt_checkout_heading_text_color', '#0f172a');
+    $radius        = get_option('kodyt_checkout_border_radius', '8px');
+
+    $primary       = get_option('kodyt_checkout_primary_color', '#6366f1');
+    $primary_txt   = get_option('kodyt_checkout_primary_text_color', '#ffffff');
+    $hover         = get_option('kodyt_checkout_hover_color', '#4f46e5');
+
+    $secondary     = get_option('kodyt_checkout_secondary_color', '#1e293b');
+    $secondary_txt = get_option('kodyt_checkout_secondary_text_color', '#ffffff');
+
+    $b_style       = get_option('kodyt_checkout_border_style', 'solid');
+    $step_b_w      = get_option('kodyt_checkout_step_border_width', '1px');
+    $input_b_w     = get_option('kodyt_checkout_input_border_width', '1px');
+    $input_b_c     = get_option('kodyt_checkout_input_border_color', '#cbd5e1');
+    $step_pad      = get_option('kodyt_checkout_step_card_padding', '24px');
+    $grid_gap      = get_option('kodyt_checkout_grid_column_gap', '30px');
+
+    $step_bg       = get_option('kodyt_checkout_step_bg', '#ffffff');
+    $summary_bg    = get_option('kodyt_checkout_summary_card_bg', '#f8fafc');
+    $success       = get_option('kodyt_checkout_success_color', '#22c55e');
+    $success_txt   = get_option('kodyt_checkout_success_text_color', '#ffffff');
+    $qty_bg        = get_option('kodyt_checkout_qty_badge_bg', '#1e293b');
+    $qty_txt       = get_option('kodyt_checkout_qty_badge_text', '#ffffff');
+    $sticky_top    = get_option('kodyt_checkout_sticky_top_offset', '20px');
+
+?>
+    <style id="kodyt-checkout-design-tokens">
+      :root {
+        --kodyt-font: <?php echo wp_kses_post($font); ?>;
+        --kodyt-text-base: <?php echo esc_html($base_text); ?>;
+        --kodyt-text-heading: <?php echo esc_html($heading_text); ?>;
+        --kodyt-radius: <?php echo esc_html($radius); ?>;
+
+        --kodyt-primary: <?php echo esc_html($primary); ?>;
+        --kodyt-primary-text: <?php echo esc_html($primary_txt); ?>;
+        --kodyt-primary-hover: <?php echo esc_html($hover); ?>;
+
+        --kodyt-secondary: <?php echo esc_html($secondary); ?>;
+        --kodyt-secondary-text: <?php echo esc_html($secondary_txt); ?>;
+
+        --kodyt-border-style: <?php echo esc_html($b_style); ?>;
+        --kodyt-step-border-width: <?php echo esc_html($step_b_w); ?>;
+        --kodyt-input-border-width: <?php echo esc_html($input_b_w); ?>;
+        --kodyt-input-border-color: <?php echo esc_html($input_b_c); ?>;
+        --kodyt-step-padding: <?php echo esc_html($step_pad); ?>;
+        --kodyt-grid-gap: <?php echo esc_html($grid_gap); ?>;
+
+        --kodyt-step-bg: <?php echo esc_html($step_bg); ?>;
+        --kodyt-summary-bg: <?php echo esc_html($summary_bg); ?>;
+        --kodyt-success: <?php echo esc_html($success); ?>;
+        --kodyt-success-text: <?php echo esc_html($success_txt); ?>;
+        --kodyt-qty-badge-bg: <?php echo esc_html($qty_bg); ?>;
+        --kodyt-qty-badge-text: <?php echo esc_html($qty_txt); ?>;
+        --kodyt-sticky-top: <?php echo esc_html($sticky_top); ?>;
+      }
+    </style>
+  <?php
   }
 
   public function render_custom_checkout()
@@ -51,6 +118,7 @@ class Kodyt_Checkout_Core
       'first_name' => sanitize_text_field($posted_data['kodyt_shipping_first_name']),
       'last_name'  => sanitize_text_field($posted_data['kodyt_shipping_last_name']),
       'address_1'  => $full_shipping_address,
+      'phone'      => sanitize_text_field($posted_data['kodyt_shipping_phone']),
       'city'       => sanitize_text_field($posted_data['kodyt_shipping_city']),
       'postcode'   => sanitize_text_field($posted_data['kodyt_shipping_postcode']),
       'country'    => sanitize_text_field($posted_data['kodyt_shipping_country'])
@@ -217,7 +285,7 @@ class Kodyt_Checkout_Core
   public function render_unified_inline_otp_login()
   {
     if (is_user_logged_in()) return;
-?>
+  ?>
     <div class="kodyt-account-inline-otp-wrap" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 32px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);">
       <h4 style="margin: 0 0 6px 0; font-size: 16px; color: #0f172a; font-weight: 700;"><?php _e('Fast OTP Authentication', 'kodyt-checkout'); ?></h4>
       <p style="margin: 0 0 16px 0; font-size: 13px; color: #64748b; line-height: 1.4;"><?php _e('Bypass passwords. Enter your mobile number below to log in or register an account instantly.', 'kodyt-checkout'); ?></p>

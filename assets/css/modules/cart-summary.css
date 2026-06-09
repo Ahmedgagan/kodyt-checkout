@@ -1,14 +1,35 @@
-.kodyt-summary-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; position: sticky; top: 20px; }
-.kodyt-summary-card h4 { margin: 0 0 15px 0; font-size: 16px; font-weight: 700; color: #0f172a; }
-.kodyt-divider { border: 0; height: 1px; background: #e2e8f0; margin: 15px 0; }
-.kodyt-total-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #475569; }
-.kodyt-total-row.final-total { font-size: 18px; margin-top: 15px; border-top: 1px dashed #cbd5e1; padding-top: 15px; color: #0f172a; }
+.kodyt-summary-card { 
+    background-color: var(--kodyt-summary-bg); 
+    border: var(--kodyt-step-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); 
+    border-radius: var(--kodyt-radius); 
+    padding: var(--kodyt-step-padding); 
+    position: sticky; 
+    top: var(--kodyt-sticky-top); 
+}
+.kodyt-summary-card h4 { margin: 0 0 15px 0; font-size: 16px; font-weight: 700; color: var(--kodyt-text-heading); }
+.kodyt-divider { border: 0; height: 1px; background: var(--kodyt-input-border-color); margin: 15px 0; }
+.kodyt-total-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: var(--kodyt-text-base); }
+.kodyt-total-row.final-total { font-size: 18px; margin-top: 15px; border-top: 1px dashed var(--kodyt-input-border-color); padding-top: 15px; color: var(--kodyt-text-heading); }
 .kodyt-summary-items-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; max-height: 420px; overflow-y: auto; }
 .kodyt-summary-item-row { display: grid !important; grid-template-columns: 64px 1fr auto !important; align-items: center; gap: 16px; width: 100%; }
-.kodyt-summary-item-thumb { position: relative; width: 64px; height: 64px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px; }
-.kodyt-summary-item-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
-.kodyt-summary-item-qty-badge { position: absolute; top: -6px; right: -6px; background: #1e293b; color: #ffffff; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-.kodyt-summary-item-title { font-size: 14px; font-weight: 600; color: #1e293b; }
-.kodyt-coupon-integration-area { margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0; }
-#kodyt-toggle-coupon-field { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 4px 0; }
-#kodyt-toggle-coupon-field span { font-size: 13px; font-weight: 600; color: #6366f1; }
+.kodyt-summary-item-thumb { position: relative; width: 64px; height: 64px; background: #ffffff; border: 1px solid var(--kodyt-input-border-color); border-radius: var(--kodyt-radius); padding: 4px; }
+.kodyt-summary-item-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--kodyt-radius); }
+
+.kodyt-summary-item-qty-badge { 
+    position: absolute; 
+    top: -6px; 
+    right: -6px; 
+    background: var(--kodyt-qty-badge-bg); 
+    color: var(--kodyt-qty-badge-text); 
+    font-size: 10px; 
+    font-weight: 700; 
+    width: 18px; 
+    height: 18px; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+}
+.kodyt-summary-item-title { font-size: 14px; font-weight: 600; color: var(--kodyt-text-base); }
+.kodyt-coupon-integration-area { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--kodyt-input-border-color); }
+#kodyt-toggle-coupon-field span { font-size: 13px; font-weight: 600; color: var(--kodyt-primary); }

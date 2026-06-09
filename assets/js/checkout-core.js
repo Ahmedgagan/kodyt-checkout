@@ -63,7 +63,7 @@ jQuery(document).ready(function($) {
 
         let searchParams = new URLSearchParams($(this).serialize());
         searchParams.set('kodyt_auth_phone', $('#kodyt_auth_phone').val());
-        searchParams.set('kodyt_shipping_phone', $('#kodyt_auth_phone').val());
+        searchParams.set('kodyt_shipping_phone', $('#kodyt_shipping_phone').val());
         searchParams.set('kodyt_in_memory_user_id', $('#kodyt_in_memory_user_id').val());
         searchParams.set('kodyt_country_dial_code', dialCode);
 

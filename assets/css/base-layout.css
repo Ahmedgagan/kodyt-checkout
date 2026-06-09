@@ -1,6 +1,6 @@
 .kodyt-checkout-container {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    color: #1e293b;
+    font-family: var(--kodyt-font), system-ui, -apple-system, sans-serif;
+    color: var(--kodyt-text-base);
     margin: 20px auto;
     max-width: 1200px;
     box-sizing: border-box;
@@ -13,14 +13,42 @@
 .kodyt-checkout-container input[type="text"],
 .kodyt-checkout-container input[type="tel"],
 .kodyt-checkout-container input[type="email"] {
-    width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px;
-    font-size: 14px; box-sizing: border-box; transition: border 0.2s ease; height: 46px;
+    width: 100%; 
+    padding: 12px 16px; 
+    border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); 
+    border-radius: var(--kodyt-radius);
+    font-size: 14px; 
+    box-sizing: border-box; 
+    transition: border 0.2s ease; 
+    height: 46px;
+    background-color: #ffffff;
+    color: var(--kodyt-text-base);
 }
-.kodyt-checkout-container input:focus { outline: none; border-color: #6366f1; }
+.kodyt-checkout-container input:focus { 
+    outline: none; 
+    border-color: var(--kodyt-primary); 
+}
 .kodyt-checkout-container button {
-    background-color: #6366f1; color: #ffffff; padding: 12px 20px; border-radius: 8px;
-    border: none; font-weight: 600; cursor: pointer; transition: background 0.2s ease;
-    font-size: 14px; height: 46px; display: inline-flex; align-items: center; justify-content: center;
+    background-color: var(--kodyt-primary); 
+    color: var(--kodyt-primary-text); 
+    padding: 12px 20px; 
+    border-radius: var(--kodyt-radius);
+    border: none; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: all 0.2s ease;
+    font-size: 14px; 
+    height: 46px; 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center;
 }
-.kodyt-checkout-container button:hover { background-color: #4f46e5; }
-.kodyt-grid { display: grid; grid-template-columns: 7fr 5fr; gap: 30px; align-items: start; }
+.kodyt-checkout-container button:hover { 
+    background-color: var(--kodyt-primary-hover); 
+}
+.kodyt-grid { 
+    display: grid; 
+    grid-template-columns: 7fr 5fr; 
+    gap: var(--kodyt-grid-gap); 
+    align-items: start; 
+}
