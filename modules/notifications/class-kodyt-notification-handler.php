@@ -124,7 +124,7 @@ class Kodyt_Notification_Handler
           'store_name'       => html_entity_decode(get_bloginfo('name')),
           'customer_phone'   => $phone,
           'items'            => $items_flattened_string,
-          'amount'           => $clean_amount_string, // ◄ Passes clean numeric string "1801.00"
+          'total_amount'     => $clean_amount_string, // ◄ Passes clean numeric string "1801.00"
           'shipping_address' => $shipping_address_string, // ◄ Passes crisp, de-duplicated address line
           'isUsingCustomKey' => false
         );
