@@ -125,7 +125,7 @@ class Kodyt_Auth_Handler
 
     $code = wp_remote_retrieve_response_code($response);
     $body = json_decode(wp_remote_retrieve_body($response), true);
-    error_log(json_encode($body));
+
     if ($code === 200 && isset($body['verified']) && $body['verified'] === true) {
       $user_id = Kodyt_User_Bridge::resolve_identity($phone, $country_code);
 

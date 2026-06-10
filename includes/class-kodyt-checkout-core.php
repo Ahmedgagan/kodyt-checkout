@@ -13,40 +13,71 @@ class Kodyt_Checkout_Core
     add_action('wp_head', array($this, 'inject_global_design_variables'));
     add_action('wp_ajax_kodyt_process_checkout', array($this, 'process_final_checkout'));
     add_action('wp_ajax_nopriv_kodyt_process_checkout', array($this, 'process_final_checkout'));
+    add_action('init', array($this, 'register_pending_confirmation_order_status'));
+    add_filter('wc_order_statuses', array($this, 'add_pending_confirmation_to_order_statuses'));
+  }
+
+  public function register_pending_confirmation_order_status()
+  {
+    register_post_status('wc-pending-confirm', array(
+      'label'                     => _x('Pending Confirmation', 'Order status', 'kodyt-checkout'),
+      'public'                    => true,
+      'exclude_from_search'       => false,
+      'show_in_admin_all_list'    => true,
+      'show_in_admin_status_list' => true,
+      'label_count'               => _n_noop('Pending Confirmation <span class="count">(%s)</span>', 'Pending Confirmation <span class="count">(%s)</span>', 'kodyt-checkout')
+    ));
+  }
+
+  /**
+   * 2. Inject the custom status into the core WooCommerce order management dropdown views
+   */
+  public function add_pending_confirmation_to_order_statuses($order_statuses)
+  {
+    $new_statuses = array();
+
+    // We strategically inject it right after the default 'Pending Payment' status for layout consistency
+    foreach ($order_statuses as $key => $status) {
+      $new_statuses[$key] = $status;
+      if ('wc-pending' === $key) {
+        $new_statuses['wc-pending-confirm'] = _x('Pending Confirmation', 'Order status', 'kodyt-checkout');
+      }
+    }
+
+    return $new_statuses;
   }
 
   public function inject_global_design_variables()
   {
-    // Prevent this from rendering on administration panel dashboard screens
     if (is_admin()) return;
 
-    // Fetch custom layout properties from options db records matching user preferences
-    $font          = get_option('kodyt_checkout_font_family', "'Inter', system-ui, -apple-system, sans-serif");
-    $base_text     = get_option('kodyt_checkout_base_text_color', '#1e293b');
-    $heading_text  = get_option('kodyt_checkout_heading_text_color', '#0f172a');
-    $radius        = get_option('kodyt_checkout_border_radius', '8px');
+    // We pass explicit fallback strings directly behind our get_option trackers
+    $font          = get_option('kodyt_checkout_font_family') ?: "'Inter', system-ui, -apple-system, sans-serif";
+    $base_text     = get_option('kodyt_checkout_base_text_color') ?: '#1e293b';
+    $heading_text  = get_option('kodyt_checkout_heading_text_color') ?: '#0f172a';
+    $radius        = get_option('kodyt_checkout_border_radius') ?: '8px';
 
-    $primary       = get_option('kodyt_checkout_primary_color', '#6366f1');
-    $primary_txt   = get_option('kodyt_checkout_primary_text_color', '#ffffff');
-    $hover         = get_option('kodyt_checkout_hover_color', '#4f46e5');
+    $primary       = get_option('kodyt_checkout_primary_color') ?: '#6366f1';
+    $primary_txt   = get_option('kodyt_checkout_primary_text_color') ?: '#ffffff';
+    $hover         = get_option('kodyt_checkout_hover_color') ?: '#4f46e5';
 
-    $secondary     = get_option('kodyt_checkout_secondary_color', '#1e293b');
-    $secondary_txt = get_option('kodyt_checkout_secondary_text_color', '#ffffff');
+    $secondary     = get_option('kodyt_checkout_secondary_color') ?: '#1e293b';
+    $secondary_txt = get_option('kodyt_checkout_secondary_text_color') ?: '#ffffff';
 
-    $b_style       = get_option('kodyt_checkout_border_style', 'solid');
-    $step_b_w      = get_option('kodyt_checkout_step_border_width', '1px');
-    $input_b_w     = get_option('kodyt_checkout_input_border_width', '1px');
-    $input_b_c     = get_option('kodyt_checkout_input_border_color', '#cbd5e1');
-    $step_pad      = get_option('kodyt_checkout_step_card_padding', '24px');
-    $grid_gap      = get_option('kodyt_checkout_grid_column_gap', '30px');
+    $b_style       = get_option('kodyt_checkout_border_style') ?: 'solid';
+    $step_b_w      = get_option('kodyt_checkout_step_border_width') ?: '1px';
+    $input_b_w     = get_option('kodyt_checkout_input_border_width') ?: '1px';
+    $input_b_c     = get_option('kodyt_checkout_input_border_color') ?: '#cbd5e1';
+    $step_pad      = get_option('kodyt_checkout_step_card_padding') ?: '24px';
+    $grid_gap      = get_option('kodyt_checkout_grid_column_gap') ?: '30px';
 
-    $step_bg       = get_option('kodyt_checkout_step_bg', '#ffffff');
-    $summary_bg    = get_option('kodyt_checkout_summary_card_bg', '#f8fafc');
-    $success       = get_option('kodyt_checkout_success_color', '#22c55e');
-    $success_txt   = get_option('kodyt_checkout_success_text_color', '#ffffff');
-    $qty_bg        = get_option('kodyt_checkout_qty_badge_bg', '#1e293b');
-    $qty_txt       = get_option('kodyt_checkout_qty_badge_text', '#ffffff');
-    $sticky_top    = get_option('kodyt_checkout_sticky_top_offset', '20px');
+    $step_bg       = get_option('kodyt_checkout_step_bg') ?: '#ffffff';
+    $summary_bg    = get_option('kodyt_checkout_summary_card_bg') ?: '#f8fafc';
+    $success       = get_option('kodyt_checkout_success_color') ?: '#22c55e';
+    $success_txt   = get_option('kodyt_checkout_success_text_color') ?: '#ffffff';
+    $qty_bg        = get_option('kodyt_checkout_qty_badge_bg') ?: '#1e293b';
+    $qty_txt       = get_option('kodyt_checkout_qty_badge_text') ?: '#ffffff';
+    $sticky_top    = get_option('kodyt_checkout_sticky_top_offset') ?: '20px';
 
 ?>
     <style id="kodyt-checkout-design-tokens">
@@ -55,21 +86,17 @@ class Kodyt_Checkout_Core
         --kodyt-text-base: <?php echo esc_html($base_text); ?>;
         --kodyt-text-heading: <?php echo esc_html($heading_text); ?>;
         --kodyt-radius: <?php echo esc_html($radius); ?>;
-
         --kodyt-primary: <?php echo esc_html($primary); ?>;
         --kodyt-primary-text: <?php echo esc_html($primary_txt); ?>;
         --kodyt-primary-hover: <?php echo esc_html($hover); ?>;
-
         --kodyt-secondary: <?php echo esc_html($secondary); ?>;
         --kodyt-secondary-text: <?php echo esc_html($secondary_txt); ?>;
-
         --kodyt-border-style: <?php echo esc_html($b_style); ?>;
         --kodyt-step-border-width: <?php echo esc_html($step_b_w); ?>;
         --kodyt-input-border-width: <?php echo esc_html($input_b_w); ?>;
         --kodyt-input-border-color: <?php echo esc_html($input_b_c); ?>;
         --kodyt-step-padding: <?php echo esc_html($step_pad); ?>;
         --kodyt-grid-gap: <?php echo esc_html($grid_gap); ?>;
-
         --kodyt-step-bg: <?php echo esc_html($step_bg); ?>;
         --kodyt-summary-bg: <?php echo esc_html($summary_bg); ?>;
         --kodyt-success: <?php echo esc_html($success); ?>;
@@ -175,6 +202,18 @@ class Kodyt_Checkout_Core
         wp_set_auth_cookie($user_id, true);
         if (WC()->session) WC()->session->set_customer_session_cookie(true);
         WC()->cart->empty_cart();
+
+        // Set the order status cleanly to your new custom "Pending Confirmation" status
+        $order->update_status('pending-confirm', __('Order created via custom checkout, awaiting WhatsApp customer validation.', 'kodyt-checkout'));
+
+        // Save the order structure updates to the database
+        $order->save();
+
+        if (! class_exists('Kodyt_Notification_Handler')) {
+          require_once KODYT_CHECKOUT_PATH . 'modules/notifications/class-kodyt-notification-handler.php';
+        }
+        // Call the notification builder directly by skipping hooks completely
+        Kodyt_Notification_Handler::trigger_whatsapp_order_notification($order->get_id(), $order);
         wp_send_json(array('result' => 'success', 'redirect' => $result['redirect']));
       } else {
         wp_send_json_error(array('message' => 'Payment routing failed.'));

@@ -23,6 +23,8 @@ require_once KODYT_CHECKOUT_PATH . 'modules/auth/class-kodyt-auth-handler.php';
 require_once KODYT_CHECKOUT_PATH . 'modules/location/class-kodyt-location-handler.php';
 require_once KODYT_CHECKOUT_PATH . 'modules/marketing/class-kodyt-coupon-handler.php';
 
+require_once KODYT_CHECKOUT_PATH . 'modules/notifications/class-kodyt-notification-handler.php';
+
 function run_kodyt_checkout_engine()
 {
   new Kodyt_Checkout_Core();
@@ -32,5 +34,7 @@ function run_kodyt_checkout_engine()
   new Kodyt_Auth_Handler();
   new Kodyt_Location_Handler();
   new Kodyt_Coupon_Handler();
+  // NEW: Fire Up WhatsApp Notification Module Hook Listeners
+  new Kodyt_Notification_Handler();
 }
 add_action('plugins_loaded', 'run_kodyt_checkout_engine');
