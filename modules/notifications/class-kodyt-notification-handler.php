@@ -120,6 +120,7 @@ class Kodyt_Notification_Handler
           'license_key'      => isset($creds['license_key']) ? $creds['license_key'] : '',
           'domain'           => isset($creds['domain']) ? $creds['domain'] : '',
           'session_token'    => $token,
+          'order_id'         => $order_id,
           'store_name'       => html_entity_decode(get_bloginfo('name')),
           'customer_phone'   => $phone,
           'items'            => $items_flattened_string,
