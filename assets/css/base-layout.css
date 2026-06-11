@@ -1,3 +1,5 @@
+@import url('https://googleapis.com');
+
 .kodyt-checkout-container {
     font-family: var(--kodyt-font), system-ui, -apple-system, sans-serif;
     color: var(--kodyt-text-base);
@@ -24,7 +26,7 @@
     background-color: #ffffff;
     color: var(--kodyt-text-base);
 }
-.kodyt-checkout-container input:focus { 
+.kodyt-checkout-container input:focus {
     outline: none; 
     border-color: var(--kodyt-primary); 
 }

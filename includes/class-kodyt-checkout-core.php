@@ -233,6 +233,19 @@ class Kodyt_Checkout_Core
 
     if ($is_checkout_shortcode || $is_my_account_screen) {
 
+      $chosen_font = get_option('kodyt_checkout_font_family', 'Inter');
+
+      // Format the name for the API URL
+      $formatted_font = str_replace(' ', '+', $chosen_font);
+
+      // Enqueue it safely using the WordPress system
+      wp_enqueue_style(
+        'user-chosen-font',
+        "https://fonts.googleapis.com/css2?family={$formatted_font}:wght@400;700&display=swap",
+        array(),
+        null // Setting version to null stops WP from breaking the query string
+      );
+
       // =====================================================================
       // 1. THIRD-PARTY DEPENDENCY VECTORS
       // =====================================================================

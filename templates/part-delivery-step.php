@@ -49,7 +49,7 @@ $uid = isset($in_memory_user_id) ? $in_memory_user_id : 0;
 
 <div class="kodyt-form-row" style="margin-top:15px;">
   <input type="email" name="kodyt_shipping_email" id="kodyt_shipping_email" value="<?php echo esc_attr($is_verified ? WC()->customer->get_billing_email() : ''); ?>" placeholder="Email Address" required />
-  <input type="tel" name="kodyt_shipping_phone" id="kodyt_shipping_phone" value="<?php echo esc_attr(isset($pre_filled_phone) ? $pre_filled_phone : ''); ?>" placeholder="Shipping Mobile Number" required />
+  <input type="tel" name="kodyt_shipping_phone" id="kodyt_shipping_phone" value="<?php echo esc_attr(isset($pre_filled_phone) ? $pre_filled_phone : ''); ?>" placeholder="Shipping Mobile Number (Whatsapp)" required />
 </div>
 
 <div class="kodyt-form-row" style="margin-top:15px;">
