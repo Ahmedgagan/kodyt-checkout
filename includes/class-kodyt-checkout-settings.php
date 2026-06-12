@@ -547,11 +547,11 @@ class Kodyt_Checkout_Settings
         'desc'     => __('Calculate targeting numbers patterns priorities filters sorting destination nodes mappings.', 'kodyt-checkout'),
         'id'       => 'kodyt_checkout_whatsapp_routing',
         'options'  => array(
-          'billing'  => __('Verified Profile / Billing Invoice Number', 'kodyt-checkout'),
-          'shipping' => __('Shipping Delivery Destination Phone Record Field', 'kodyt-checkout'),
-          'both'     => __('Send Message Logs to Both Numbers (De-duplicated loops checks automated)', 'kodyt-checkout'),
+          'profile'     => __('Send Message to Profile Verified Mobile Number', 'kodyt-checkout'),
+          'billing'  => __('Send Message to Billing Invoice Moobile Number', 'kodyt-checkout'),
+          'shipping' => __('Send Message to Shipping Mobile Number', 'kodyt-checkout'),
         ),
-        'default'  => 'billing',
+        'default'  => 'profile',
       ),
       'whatsapp_section_end' => array('type' => 'sectionend', 'id' => 'kodyt_checkout_whatsapp_section_end')
     );

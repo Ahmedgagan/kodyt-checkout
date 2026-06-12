@@ -33,6 +33,14 @@ class Kodyt_Notification_Handler
       // 3. Extract baseline phone properties out of the Order context meta
       $billing_phone  = trim($order->get_billing_phone());
       $shipping_phone = trim($order->get_shipping_phone());
+      $profile_phone  = '';
+      $customer_id    = $order->get_user_id(); // Gets the WP_User ID linked to this order
+
+      if ($customer_id > 0) {
+        // Fetch the clean 'phone_number' string you verified during Step 1
+        $profile_phone = trim(get_user_meta($customer_id, 'phone_number', true));
+        $profile_dial_code = trim(get_user_meta($customer_id, 'phone_country_dial_code', true));
+      }
 
       // 4. Execute the defensive fallback cascading loop architecture 
       $target_numbers = array();
@@ -41,12 +49,9 @@ class Kodyt_Notification_Handler
         $target_numbers[] = ! empty($billing_phone) ? $billing_phone : $shipping_phone;
       } elseif ('shipping' === $routing_strategy) {
         $target_numbers[] = ! empty($shipping_phone) ? $shipping_phone : $billing_phone;
-      } elseif ('both' === $routing_strategy) {
-        if (! empty($billing_phone)) {
-          $target_numbers[] = $billing_phone;
-        }
-        if (! empty($shipping_phone)) {
-          $target_numbers[] = $shipping_phone;
+      } elseif ('profile' === $routing_strategy) {
+        if (! empty($profile_phone)) {
+          $target_numbers[] = $profile_dial_code . $profile_phone;
         }
       }
 
