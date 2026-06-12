@@ -80,14 +80,17 @@ jQuery(document).ready(function($) {
 
         // Extract dial codes from both intl-tel instances
         let authDialCode = window.kodytItiInstance ? window.kodytItiInstance.getSelectedCountryData().dialCode : "";
-        let shippingDialCode = window.kodytShippingItiInstance ? window.kodytShippingItiInstance.getSelectedCountryData().dialCode : ""; // ◄ NEW
+        let shippingDialCode = window.kodytShippingItiInstance ? window.kodytShippingItiInstance.getSelectedCountryData().dialCode : "";
+        let billingDialCode = window.kodytBillingItiInstance ? window.kodytBillingItiInstance.getSelectedCountryData().dialCode : "";
 
         let searchParams = new URLSearchParams($(this).serialize());
         searchParams.set('kodyt_auth_phone', $('#kodyt_auth_phone').val());
         searchParams.set('kodyt_shipping_phone', $('#kodyt_shipping_phone').val());
+        searchParams.set('kodyt_billing_phone', $('#kodyt_billing_phone').val());
         searchParams.set('kodyt_in_memory_user_id', $('#kodyt_in_memory_user_id').val());
         searchParams.set('kodyt_country_dial_code', authDialCode);
-        searchParams.set('kodyt_shipping_country_dial_code', shippingDialCode); // ◄ NEW: Append to payload
+        searchParams.set('kodyt_shipping_country_dial_code', shippingDialCode);
+        searchParams.set('kodyt_billing_country_dial_code', billingDialCode);
 
         $.post(params.ajax_url, {
             action: 'kodyt_process_checkout',

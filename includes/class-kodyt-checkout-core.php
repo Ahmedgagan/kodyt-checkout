@@ -132,18 +132,21 @@ class Kodyt_Checkout_Core
     $auth_phone         = isset($posted_data['kodyt_auth_phone']) ? sanitize_text_field($posted_data['kodyt_auth_phone']) : '';
     $user_id            = isset($posted_data['kodyt_in_memory_user_id']) ? intval($posted_data['kodyt_in_memory_user_id']) : 0;
     $auth_dial_code     = isset($posted_data['kodyt_country_dial_code']) ? sanitize_text_field($posted_data['kodyt_country_dial_code']) : '';
-    $shipping_dial_code = isset($posted_data['kodyt_shipping_country_dial_code']) ? sanitize_text_field($posted_data['kodyt_shipping_country_dial_code']) : ''; // ◄ NEW
+
+    $shipping_dial_code = isset($posted_data['kodyt_shipping_country_dial_code']) ? sanitize_text_field($posted_data['kodyt_shipping_country_dial_code']) : '';
+    $billing_dial_code  = isset($posted_data['kodyt_billing_country_dial_code']) ? sanitize_text_field($posted_data['kodyt_billing_country_dial_code']) : ''; // ◄ NEW
 
     if (empty($auth_phone) || empty($user_id)) {
       wp_send_json_error(array('message' => 'Session expired. Execute step 1 verification again.'));
     }
 
     $raw_shipping_phone = sanitize_text_field($posted_data['kodyt_shipping_phone']);
+    $raw_billing_phone  = isset($posted_data['kodyt_billing_phone']) ? sanitize_text_field($posted_data['kodyt_billing_phone']) : ''; // ◄ NEW
 
-    // Clean up and format the numbers with country codes if they aren't already included
-    $formatted_auth_phone = (!empty($auth_dial_code) && strpos($auth_phone, $auth_dial_code) !== 0) ? $auth_dial_code . $auth_phone : $auth_phone;
+    // Formulate Shipping Number format layers
     $formatted_shipping_phone = (!empty($shipping_dial_code) && strpos($raw_shipping_phone, $shipping_dial_code) !== 0) ? $shipping_dial_code . $raw_shipping_phone : $raw_shipping_phone;
 
+    // Compile Dynamic Shipping Context Args
     $ship_house  = sanitize_text_field($posted_data['kodyt_shipping_house_number']);
     $ship_street = sanitize_text_field($posted_data['kodyt_shipping_address_1']);
     $full_shipping_address = (strpos($ship_street, $ship_house) !== false) ? $ship_street : $ship_house . ', ' . $ship_street;
@@ -152,22 +155,47 @@ class Kodyt_Checkout_Core
       'first_name' => sanitize_text_field($posted_data['kodyt_shipping_first_name']),
       'last_name'  => sanitize_text_field($posted_data['kodyt_shipping_last_name']),
       'address_1'  => $full_shipping_address,
-      'phone'      => $formatted_shipping_phone, // ◄ UPDATED: Passes country code + number
+      'phone'      => $formatted_shipping_phone,
       'city'       => sanitize_text_field($posted_data['kodyt_shipping_city']),
       'postcode'   => sanitize_text_field($posted_data['kodyt_shipping_postcode']),
       'country'    => sanitize_text_field($posted_data['kodyt_shipping_country'])
     );
 
-    $billing_args = array(
-      'first_name' => $shipping_args['first_name'],
-      'last_name'  => $shipping_args['last_name'],
-      'email'      => sanitize_email($posted_data['kodyt_shipping_email']),
-      'phone'      => $formatted_auth_phone, // ◄ UPDATED: Passes country code + number
-      'address_1'  => $shipping_args['address_1'],
-      'city'       => $shipping_args['city'],
-      'postcode'   => $shipping_args['postcode'],
-      'country'    => $shipping_args['country']
-    );
+    // ◄ UPDATED: Conditional routing check for standalone custom billing information layers
+    $is_different_billing = isset($posted_data['kodyt_different_billing']) && $posted_data['kodyt_different_billing'] == '1';
+
+    if ($is_different_billing) {
+      $formatted_billing_phone = (!empty($billing_dial_code) && strpos($raw_billing_phone, $billing_dial_code) !== 0) ? $billing_dial_code . $raw_billing_phone : $raw_billing_phone;
+
+      $bill_house = sanitize_text_field($posted_data['kodyt_billing_house_number']);
+      $bill_street = sanitize_text_field($posted_data['kodyt_billing_address_1']);
+      $full_billing_address = (strpos($bill_street, $bill_house) !== false) ? $bill_street : $bill_house . ', ' . $bill_street;
+
+      $billing_args = array(
+        'first_name' => $shipping_args['first_name'], // Inherits name layers
+        'last_name'  => $shipping_args['last_name'],
+        'email'      => sanitize_email($posted_data['kodyt_billing_email']), // Explicit separate billing email
+        'phone'      => $formatted_billing_phone, // Explicit separate billing phone
+        'address_1'  => $full_billing_address,
+        'city'       => sanitize_text_field($posted_data['kodyt_billing_city']),
+        'postcode'   => sanitize_text_field($posted_data['kodyt_billing_postcode']),
+        'country'    => sanitize_text_field($posted_data['kodyt_billing_country'])
+      );
+    } else {
+      // Default Fallback Scenario: Mirror Auth Profiling details perfectly
+      $formatted_auth_phone = (!empty($auth_dial_code) && strpos($auth_phone, $auth_dial_code) !== 0) ? $auth_dial_code . $auth_phone : $auth_phone;
+
+      $billing_args = array(
+        'first_name' => $shipping_args['first_name'],
+        'last_name'  => $shipping_args['last_name'],
+        'email'      => sanitize_email($posted_data['kodyt_shipping_email']),
+        'phone'      => $formatted_auth_phone,
+        'address_1'  => $shipping_args['address_1'],
+        'city'       => $shipping_args['city'],
+        'postcode'   => $shipping_args['postcode'],
+        'country'    => $shipping_args['country']
+      );
+    }
 
     try {
       $order = wc_create_order();

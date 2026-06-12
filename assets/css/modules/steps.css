@@ -40,6 +40,13 @@
     min-width: 0 !important;
 }
 
+.kodyt-form-row > input[type="email"]#kodyt_billing_email,
+.kodyt-form-row:has(#kodyt_billing_phone) > .iti {
+    flex: 1 1 50% !important;
+    max-width: calc(50% - 7.5px) !important;
+    min-width: 0 !important;
+}
+
 /* Ensure the telephone input stretches completely inside its 50% wrapper allocation */
 .kodyt-form-row .iti input[type="tel"] {
     width: 100% !important;

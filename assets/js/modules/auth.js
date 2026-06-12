@@ -10,7 +10,8 @@ jQuery(document).ready(function($) {
     window.kodytItiInstance = null; 
     window.kodytAccountItiInstance = null;
     window.kodytProfileItiInstance = null;
-    window.kodytShippingItiInstance = null; // ◄ NEW: Scoped shipping instance
+    window.kodytShippingItiInstance = null;
+    window.kodytBillingItiInstance = null;
     let accountOtpTimerInstance = null;
 
     function runDynamicInitializers() {
@@ -22,7 +23,7 @@ jQuery(document).ready(function($) {
         const phoneInput = document.querySelector("#kodyt_auth_phone_active");
         if (phoneInput && !window.kodytItiInstance) {
             window.kodytItiInstance = window.intlTelInput(phoneInput, {
-                initialCountry: "in", separateDialCode: true,
+                initialCountry: defaultCountry, separateDialCode: true,
                 onlyCountries: allowedCountries.length ? allowedCountries : undefined,
                 utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js"
             });
@@ -32,7 +33,7 @@ jQuery(document).ready(function($) {
         const accountPhoneInput = document.querySelector("#kodyt_account_phone");
         if (accountPhoneInput && !window.kodytAccountItiInstance) {
             window.kodytAccountItiInstance = window.intlTelInput(accountPhoneInput, {
-                initialCountry: "in", separateDialCode: true,
+                initialCountry: defaultCountry, separateDialCode: true,
                 onlyCountries: allowedCountries.length ? allowedCountries : undefined,
                 utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js"
             });
@@ -43,11 +44,22 @@ jQuery(document).ready(function($) {
         const shippingPhoneInput = document.querySelector("#kodyt_shipping_phone");
         if (shippingPhoneInput && !window.kodytShippingItiInstance) {
             window.kodytShippingItiInstance = window.intlTelInput(shippingPhoneInput, {
-                initialCountry: "in", separateDialCode: true,
+                initialCountry: defaultCountry, separateDialCode: true,
                 onlyCountries: allowedCountries.length ? allowedCountries : undefined,
                 utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js"
             });
             $(shippingPhoneInput).closest('.iti').css('width', '100%');
+        }
+
+        const billingPhoneInput = document.querySelector("#kodyt_billing_phone");
+        if (billingPhoneInput && !window.kodytBillingItiInstance) {
+            window.kodytBillingItiInstance = window.intlTelInput(billingPhoneInput, {
+                initialCountry: defaultCountry,
+                separateDialCode: true,
+                onlyCountries: allowedCountries.length ? allowedCountries : undefined,
+                utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js"
+            });
+            $(billingPhoneInput).closest('.iti').css('width', '100%');
         }
     }
 
@@ -145,8 +157,7 @@ jQuery(document).ready(function($) {
 
         let btn = $(this).prop('disabled', true).text('Sending...');
         let dialCode = window.kodytItiInstance ? window.kodytItiInstance.getSelectedCountryData().dialCode : "";
-        console.log(dialCode);
-        console.log(phoneNum);
+
         $.post(params.ajax_url, {
             action: 'kodyt_proxy_send_otp', security: params.checkout_nonce,
             phone: phoneNum, country_code: dialCode, otp_context: 'checkout'
@@ -223,14 +234,12 @@ jQuery(document).ready(function($) {
                             </div>
                         </div>`;
                     $('#kodyt-saved-addresses-target').html(addressHtml).show();
-                    $('#kodyt_shipping_house_number').html(addr.house_number || '');
+                    $('#kodyt_shipping_house_number').val(addr.house_number || '');
                     $('#kodyt_shipping_first_name').val(addr.first_name || '');
                     $('#kodyt_shipping_last_name').val(addr.last_name || '');
                     $('#kodyt_shipping_email').val(addr.email || '');
                     $('#kodyt_shipping_phone').val(addr.shipping_phone || phoneNum);
-                    
                     $('#kodyt_shipping_autocomplete').val(addr.address_1 || '');
-                    $('#kodyt_shipping_house_number').val(addr.hnumber);
                     $('#kodyt_shipping_city').val(addr.city || '');
                     $('#kodyt_shipping_postcode').val(addr.postcode || '');
                     $('#kodyt_shipping_country').val(addr.country || '');

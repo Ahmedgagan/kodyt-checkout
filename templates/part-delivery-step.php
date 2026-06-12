@@ -102,6 +102,11 @@ if (!isset($shipping_phone)) {
   </div>
 
   <div class="kodyt-form-row" style="margin-top: 15px;">
+    <input type="email" name="kodyt_billing_email" id="kodyt_billing_email" placeholder="Billing Email Address" />
+    <input type="tel" name="kodyt_billing_phone" id="kodyt_billing_phone" placeholder="Billing Mobile Number" />
+  </div>
+
+  <div class="kodyt-form-row" style="margin-top: 15px;">
     <input type="text" name="kodyt_billing_postcode" id="kodyt_billing_postcode" placeholder="Postcode" />
     <input type="text" name="kodyt_billing_country" id="kodyt_billing_country" placeholder="Country" />
   </div>
