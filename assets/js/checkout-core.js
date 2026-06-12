@@ -14,6 +14,11 @@ jQuery(document).ready(function($) {
         $('#kodyt_shipping_first_name').val(addr.first_name || '');
         $('#kodyt_shipping_last_name').val(addr.last_name || '');
         $('#kodyt_shipping_email').val(addr.email || '');
+        let targetPhone = addr.shipping_phone || phoneNum;
+        $('#kodyt_shipping_phone').val(targetPhone);
+        if (window.kodytShippingItiInstance) {
+            window.kodytShippingItiInstance.setNumber(targetPhone);
+        }
         $('#kodyt_shipping_phone').val(addr.shipping_phone || phoneNum);
         $('#kodyt_shipping_autocomplete').val(addr.address_1 || '');
         $('#kodyt_shipping_house_number').val(addr.hnumber || '');
@@ -39,7 +44,20 @@ jQuery(document).ready(function($) {
         $('#kodyt_shipping_first_name').val(d.fname);
         $('#kodyt_shipping_last_name').val(d.lname);
         $('#kodyt_shipping_email').val(d.email);
-        $('#kodyt_shipping_phone').val(d.sphone);
+
+        let rawPhone = d.sphone.toString().trim();
+
+        // Safety Check: Format with leading '+' for proper intl-tel-input card parsing
+        if (rawPhone && !rawPhone.startsWith('+')) {
+            rawPhone = '+' + rawPhone.replace(/^0+/, '');
+        }
+
+        if (window.kodytShippingItiInstance && rawPhone) {
+            window.kodytShippingItiInstance.setNumber(rawPhone); // Automatically updates both flag dropdown and field text
+        } else {
+            $('#kodyt_shipping_phone').val(rawPhone);
+        }
+
         $('#kodyt_shipping_house_number').val(d.hnumber);
         $('#kodyt_shipping_autocomplete').val(d.addr1);
         $('#kodyt_shipping_city').val(d.city);
@@ -59,13 +77,17 @@ jQuery(document).ready(function($) {
     $('#kodyt-custom-checkout-form').on('submit', function(e) {
         e.preventDefault();
         let submitBtn = $('#kodyt-btn-place-order').text('Processing Order...').prop('disabled', true);
-        let dialCode = window.kodytItiInstance ? window.kodytItiInstance.getSelectedCountryData().dialCode : "";
+
+        // Extract dial codes from both intl-tel instances
+        let authDialCode = window.kodytItiInstance ? window.kodytItiInstance.getSelectedCountryData().dialCode : "";
+        let shippingDialCode = window.kodytShippingItiInstance ? window.kodytShippingItiInstance.getSelectedCountryData().dialCode : ""; // ◄ NEW
 
         let searchParams = new URLSearchParams($(this).serialize());
         searchParams.set('kodyt_auth_phone', $('#kodyt_auth_phone').val());
         searchParams.set('kodyt_shipping_phone', $('#kodyt_shipping_phone').val());
         searchParams.set('kodyt_in_memory_user_id', $('#kodyt_in_memory_user_id').val());
-        searchParams.set('kodyt_country_dial_code', dialCode);
+        searchParams.set('kodyt_country_dial_code', authDialCode);
+        searchParams.set('kodyt_shipping_country_dial_code', shippingDialCode); // ◄ NEW: Append to payload
 
         $.post(params.ajax_url, {
             action: 'kodyt_process_checkout',

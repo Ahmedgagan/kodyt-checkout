@@ -129,13 +129,20 @@ class Kodyt_Checkout_Core
     }
 
     parse_str($_POST['form_data'], $posted_data);
-    $auth_phone   = isset($posted_data['kodyt_auth_phone']) ? sanitize_text_field($posted_data['kodyt_auth_phone']) : '';
-    $user_id      = isset($posted_data['kodyt_in_memory_user_id']) ? intval($posted_data['kodyt_in_memory_user_id']) : 0;
-    $country_code = isset($posted_data['kodyt_country_dial_code']) ? sanitize_text_field($posted_data['kodyt_country_dial_code']) : '';
+    $auth_phone         = isset($posted_data['kodyt_auth_phone']) ? sanitize_text_field($posted_data['kodyt_auth_phone']) : '';
+    $user_id            = isset($posted_data['kodyt_in_memory_user_id']) ? intval($posted_data['kodyt_in_memory_user_id']) : 0;
+    $auth_dial_code     = isset($posted_data['kodyt_country_dial_code']) ? sanitize_text_field($posted_data['kodyt_country_dial_code']) : '';
+    $shipping_dial_code = isset($posted_data['kodyt_shipping_country_dial_code']) ? sanitize_text_field($posted_data['kodyt_shipping_country_dial_code']) : ''; // ◄ NEW
 
     if (empty($auth_phone) || empty($user_id)) {
       wp_send_json_error(array('message' => 'Session expired. Execute step 1 verification again.'));
     }
+
+    $raw_shipping_phone = sanitize_text_field($posted_data['kodyt_shipping_phone']);
+
+    // Clean up and format the numbers with country codes if they aren't already included
+    $formatted_auth_phone = (!empty($auth_dial_code) && strpos($auth_phone, $auth_dial_code) !== 0) ? $auth_dial_code . $auth_phone : $auth_phone;
+    $formatted_shipping_phone = (!empty($shipping_dial_code) && strpos($raw_shipping_phone, $shipping_dial_code) !== 0) ? $shipping_dial_code . $raw_shipping_phone : $raw_shipping_phone;
 
     $ship_house  = sanitize_text_field($posted_data['kodyt_shipping_house_number']);
     $ship_street = sanitize_text_field($posted_data['kodyt_shipping_address_1']);
@@ -145,7 +152,7 @@ class Kodyt_Checkout_Core
       'first_name' => sanitize_text_field($posted_data['kodyt_shipping_first_name']),
       'last_name'  => sanitize_text_field($posted_data['kodyt_shipping_last_name']),
       'address_1'  => $full_shipping_address,
-      'phone'      => sanitize_text_field($posted_data['kodyt_shipping_phone']),
+      'phone'      => $formatted_shipping_phone, // ◄ UPDATED: Passes country code + number
       'city'       => sanitize_text_field($posted_data['kodyt_shipping_city']),
       'postcode'   => sanitize_text_field($posted_data['kodyt_shipping_postcode']),
       'country'    => sanitize_text_field($posted_data['kodyt_shipping_country'])
@@ -155,7 +162,7 @@ class Kodyt_Checkout_Core
       'first_name' => $shipping_args['first_name'],
       'last_name'  => $shipping_args['last_name'],
       'email'      => sanitize_email($posted_data['kodyt_shipping_email']),
-      'phone'      => $auth_phone,
+      'phone'      => $formatted_auth_phone, // ◄ UPDATED: Passes country code + number
       'address_1'  => $shipping_args['address_1'],
       'city'       => $shipping_args['city'],
       'postcode'   => $shipping_args['postcode'],
@@ -174,11 +181,12 @@ class Kodyt_Checkout_Core
 
       // Sync Database Metadata Caches Securely
       update_user_meta($user_id, 'phone_number', $auth_phone);
-      update_user_meta($user_id, 'billing_phone', $auth_phone);
-      update_user_meta($user_id, 'shipping_phone', $auth_phone);
-      update_user_meta($user_id, 'billing_email', $billing_args['email']);
+      update_user_meta($user_id, 'billing_phone', $formatted_auth_phone);
+      update_user_meta($user_id, 'shipping_phone', $formatted_shipping_phone); // ◄ UPDATED
+
       if (! empty($country_code)) update_user_meta($user_id, 'phone_country_dial_code', $country_code);
 
+      update_user_meta($user_id, 'billing_email', $billing_args['email']);
       update_user_meta($user_id, 'shipping_first_name', $shipping_args['first_name']);
       update_user_meta($user_id, 'shipping_last_name', $shipping_args['last_name']);
       update_user_meta($user_id, 'shipping_address_1', $ship_street);
@@ -186,6 +194,9 @@ class Kodyt_Checkout_Core
       update_user_meta($user_id, 'shipping_city', $shipping_args['city']);
       update_user_meta($user_id, 'shipping_postcode', $shipping_args['postcode']);
       update_user_meta($user_id, 'shipping_country', $shipping_args['country']);
+
+      if (! empty($auth_dial_code)) update_user_meta($user_id, 'phone_country_dial_code', $auth_dial_code);
+      if (! empty($shipping_dial_code)) update_user_meta($user_id, 'shipping_phone_country_dial_code', $shipping_dial_code); // ◄ NEW
 
       $order->calculate_totals();
       $payment_method = sanitize_text_field($posted_data['kodyt_payment_method']);
@@ -203,16 +214,14 @@ class Kodyt_Checkout_Core
         if (WC()->session) WC()->session->set_customer_session_cookie(true);
         WC()->cart->empty_cart();
 
-        // Set the order status cleanly to your new custom "Pending Confirmation" status
         $order->update_status('pending-confirm', __('Order created via custom checkout, awaiting WhatsApp customer validation.', 'kodyt-checkout'));
-
-        // Save the order structure updates to the database
         $order->save();
 
         if (! class_exists('Kodyt_Notification_Handler')) {
           require_once KODYT_CHECKOUT_PATH . 'modules/notifications/class-kodyt-notification-handler.php';
         }
-        // Call the notification builder directly by skipping hooks completely
+
+        // The notification handler now automatically pulls the fully formatted numbers directly out of the order objects!
         Kodyt_Notification_Handler::trigger_whatsapp_order_notification($order->get_id(), $order);
         wp_send_json(array('result' => 'success', 'redirect' => $result['redirect']));
       } else {
@@ -325,11 +334,24 @@ class Kodyt_Checkout_Core
       $license = get_option('kodyt_checkout_license_key', '');
       $domain  = wp_parse_url(home_url(), PHP_URL_HOST);
 
+      // Fetch our custom restriction option from the database
+      $custom_countries_array = get_option('kodyt_checkout_allowed_phone_countries', array());
+
+      // FIX: Ensure it is a valid array and NOT empty before enforcing it
+      if (is_array($custom_countries_array) && ! empty($custom_countries_array)) {
+        $allowed_countries_clean = array_values(array_map('strtolower', $custom_countries_array));
+      } else {
+        // Default fallback layout rule if no choices are checked on your settings tab
+        $allowed_countries_raw = function_exists('WC') ? WC()->countries->get_shipping_countries() : array();
+        $allowed_countries_clean = array_values(array_map('strtolower', array_keys($allowed_countries_raw)));
+      }
+
       wp_localize_script('kodyt-js-core', 'kodyt_checkout_params', array(
-        'ajax_url'       => admin_url('admin-ajax.php'),
-        'checkout_nonce' => wp_create_nonce('kodyt_checkout_nonce'),
-        'license_key'    => esc_js($license),
-        'domain'         => esc_js($domain)
+        'ajax_url'          => admin_url('admin-ajax.php'),
+        'checkout_nonce'    => wp_create_nonce('kodyt_checkout_nonce'),
+        'license_key'       => esc_js($license),
+        'domain'            => esc_js($domain),
+        'allowed_countries' => $allowed_countries_clean // Passed cleanly down to auth.js!
       ));
     }
   }

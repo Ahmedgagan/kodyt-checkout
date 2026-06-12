@@ -14,6 +14,19 @@ class Kodyt_Checkout_Settings
 
     // NATIVE, SINGLE-POINT HOOK: Fires strictly and exclusively when our custom form is submitted
     add_action('admin_post_kodyt_save_vault_credentials', array($this, 'process_vault_pass_through_sync'));
+    add_action('admin_enqueue_scripts', array($this, 'enqueue_settings_enhanced_select'));
+  }
+
+  public function enqueue_settings_enhanced_select($hook)
+  {
+    // Check if we are actually on our custom plugin settings page
+    if (isset($_GET['page']) && $_GET['page'] === 'kodyt-checkout-suite') {
+      // Automatically injects WooCommerce's native Select2 script wrapper and structural CSS
+      if (function_exists('WC') || class_exists('WooCommerce')) {
+        wp_enqueue_script('wc-enhanced-select');
+        wp_enqueue_style('woocommerce_admin_styles', WC()->plugin_url() . '/assets/css/admin.css', array(), WC_VERSION);
+      }
+    }
   }
 
   public function register_standalone_admin_menu()
@@ -33,6 +46,12 @@ class Kodyt_Checkout_Settings
   {
     register_setting($this->api_group, 'kodyt_checkout_license_key');
 
+    // Add this inside register_plugin_settings_schema()
+    register_setting($this->api_group, 'kodyt_checkout_allowed_phone_countries', array(
+      'type'              => 'array',
+      'sanitize_callback' => array($this, 'sanitize_multi_country_array')
+    ));
+
     foreach ($this->get_design_fields() as $field) {
       if (isset($field['id'])) register_setting($this->design_group, $field['id']);
     }
@@ -46,6 +65,15 @@ class Kodyt_Checkout_Settings
         }
       }
     }
+  }
+
+  public function sanitize_multi_country_array($input)
+  {
+    if (! is_array($input)) {
+      return array();
+    }
+    // Strip empty whitespace inputs and return sanitized uppercase 2-character keys (e.g. ['IN', 'US'])
+    return array_filter(array_map('sanitize_key', $input));
   }
 
   public function sanitize_checkbox_field_state($value)
@@ -100,7 +128,6 @@ class Kodyt_Checkout_Settings
       $payload['license_key'] = isset($creds['license_key']) ? $creds['license_key'] : '';
       $payload['domain'] = isset($creds['domain']) ? $creds['domain'] : '';
 
-      error_log(json_encode($payload));
       $response = wp_remote_post('https://api.kodyt.com/v1/keys/update', array(
         'method'    => 'PATCH',
         'timeout'   => 15,
@@ -109,7 +136,7 @@ class Kodyt_Checkout_Settings
         'body'      => wp_json_encode($payload),
         'sslverify' => false
       ));
-      error_log(json_encode($response));
+
       if (is_wp_error($response)) {
         wp_die(__('Network Failure: Unable to sync credentials with central encryption gateway.', 'kodyt-checkout'));
       }
@@ -127,6 +154,12 @@ class Kodyt_Checkout_Settings
 
   public function render_dashboard_view_router()
   {
+    $saved_countries = get_option('kodyt_checkout_allowed_phone_countries', array());
+    if (! is_array($saved_countries)) {
+      $saved_countries = array();
+    }
+
+    $all_wc_countries = function_exists('WC') ? WC()->countries->get_countries() : array();
     $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'dashboard';
 
     if (isset($_GET['vault-updated']) && $_GET['vault-updated'] == 'true') {
@@ -217,7 +250,51 @@ class Kodyt_Checkout_Settings
             <?php
             if ('api' === $active_tab) {
               settings_fields($this->api_group);
-              $current_fields = $this->get_api_fields();
+
+              $license_key = get_option('kodyt_checkout_license_key', '');
+            ?>
+              <h2 style="font-size: 18px; font-weight: 700; margin: 0 0 15px 0; color: #334155;">Kodyt Access Credentials</h2>
+
+              <table class="form-table" role="presentation">
+                <tr valign="top">
+                  <th scope="row">
+                    <label for="kodyt_checkout_license_key">Active License Validation Key</label>
+                  </th>
+                  <td>
+                    <input type="text" id="kodyt_checkout_license_key" name="kodyt_checkout_license_key" value="<?php echo esc_attr($license_key); ?>" class="regular-text" style="min-width:350px;" />
+                  </td>
+                </tr>
+
+                <tr valign="top">
+                  <th scope="row">
+                    <label for="kodyt_checkout_allowed_phone_countries">Allowed OTP Countries</label>
+                  </th>
+                  <td>
+                    <select
+                      id="kodyt_checkout_allowed_phone_countries"
+                      name="kodyt_checkout_allowed_phone_countries[]"
+                      class="wc-enhanced-select"
+                      multiple="multiple"
+                      style="width: 450px; max-width: 100%;"
+                      data-placeholder="Select allowed countries...">
+
+                      <?php foreach ($all_wc_countries as $code => $name): ?>
+                        <option value="<?php echo esc_attr(strtolower($code)); ?>" <?php selected(in_array(strtolower($code), array_map('strtolower', $saved_countries))); ?>>
+                          <?php echo esc_html($name) . ' (' . esc_html($code) . ')'; ?>
+                        </option>
+                      <?php endforeach; ?>
+
+                    </select>
+                    <p class="description" style="margin-top: 8px;">
+                      Select multiple countries allowed for mobile phone OTP verification codes. Leave completely blank to allow all countries.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            <?php
+              submit_button(__('Save Changes Settings', 'kodyt-checkout'), 'primary');
+              echo '</form></div></div>';
+              return; // Clean exit break rule
             } elseif ('design' === $active_tab) {
               settings_fields($this->design_group);
               $current_fields = $this->get_design_fields();

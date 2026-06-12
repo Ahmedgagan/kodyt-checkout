@@ -1,9 +1,66 @@
 @media (max-width: 768px) {
-    .kodyt-checkout-container { padding: 0 12px; margin: 10px auto; }
-    .kodyt-grid { display: flex !important; flex-direction: column-reverse !important; gap: 20px; }
-    .kodyt-summary-card { position: relative !important; top: 0 !important; padding: 16px; }
+    /* 1. Reset container padding so it doesn't overflow standard mobile screens */
+    .kodyt-checkout-container {
+        padding: 0 5px;
+        margin: 10px auto;
+        width: 100% !important;
+        overflow-x: hidden; /* Safety fallback guard */
+    }
+
+    /* 2. Standardize column stacking behavior */
+    .kodyt-grid {
+        display: flex !important;
+        flex-direction: column-reverse !important;
+        gap: 20px;
+        width: 100% !important;
+    }
+
+    /* 3. Strip fixed positions and force the card to stay within boundaries */
+    .kodyt-summary-card {
+        position: relative !important;
+        top: 0 !important;
+        padding: 16px;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 4. FIX: Stop item rows from bursting out of the container layout */
+    .kodyt-summary-items-list {
+        width: 100% !important;
+        padding-right: 0 !important;
+    }
+
+    .kodyt-summary-item-row {
+        /* Switch from a rigid 3-column setup to a highly adaptive flex layout on mobile */
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .kodyt-summary-item-details {
+        flex: 1; /* Allows product title text to shrink/wrap gracefully */
+        min-width: 0;
+    }
+
+    .kodyt-summary-item-title {
+        white-space: normal !important; /* Forces long product titles to wrap to a new line */
+        word-break: break-word;
+    }
+
+    /* 5. Clean up forms spacing */
     .kodyt-step { padding: 16px; margin-bottom: 12px; }
     .kodyt-form-row { flex-direction: column; gap: 12px; }
+
+    /* Force form rows to drop down to full width when stacked */
+    .kodyt-form-row > input[type="email"],
+    .kodyt-form-row > .iti {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
     .kodyt-input-group { flex-direction: column; gap: 8px; }
     .kodyt-input-group button { width: 100% !important; }
 }

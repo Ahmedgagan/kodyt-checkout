@@ -4,6 +4,17 @@ if (! defined('ABSPATH')) exit;
 // Fetch verified status checks natively across imports
 $is_verified = isset($is_phone_verified) && $is_phone_verified;
 $uid = isset($in_memory_user_id) ? $in_memory_user_id : 0;
+$shipping_phone = $is_verified ? WC()->customer->get_shipping_phone() : null;
+
+if (!isset($shipping_phone)) {
+  if (isset($pre_filled_phone)) {
+    $shipping_phone = "+" . $country_code . $pre_filled_phone;
+  } else {
+    $shipping_phone = '';
+  }
+} else {
+  $shipping_phone = "+" . $shipping_phone;
+}
 ?>
 
 <div id="kodyt-saved-addresses-target" style="<?php echo $is_verified ? 'display:block;' : 'display:none;'; ?> margin-bottom:20px;">
@@ -16,11 +27,12 @@ $uid = isset($in_memory_user_id) ? $in_memory_user_id : 0;
       echo '<p class="kodyt-section-label">Use your saved address records:</p>';
       echo '<div class="kodyt-addresses-grid">';
       foreach ($native_addresses as $addr) {
+
         echo '<div class="kodyt-address-card selected"
                 data-fname="' . esc_attr($addr['first_name']) . '"
                 data-lname="' . esc_attr($addr['last_name']) . '"
                 data-email="' . esc_attr($addr['email']) . '"
-                data-sphone="' . esc_attr($addr['shipping_phone']) . '"
+                data-sphone="' . esc_attr("+" . $addr['shipping_phone']) . '"
                 data-addr1="' . esc_attr($addr['address_1']) . '"
                 data-hnumber="' . esc_attr($addr['house_number']) . '"
                 data-city="' . esc_attr($addr['city']) . '"
@@ -49,7 +61,7 @@ $uid = isset($in_memory_user_id) ? $in_memory_user_id : 0;
 
 <div class="kodyt-form-row" style="margin-top:15px;">
   <input type="email" name="kodyt_shipping_email" id="kodyt_shipping_email" value="<?php echo esc_attr($is_verified ? WC()->customer->get_billing_email() : ''); ?>" placeholder="Email Address" required />
-  <input type="tel" name="kodyt_shipping_phone" id="kodyt_shipping_phone" value="<?php echo esc_attr(isset($pre_filled_phone) ? $pre_filled_phone : ''); ?>" placeholder="Shipping Mobile Number (Whatsapp)" required />
+  <input type="tel" name="kodyt_shipping_phone" id="kodyt_shipping_phone" value="<?php echo esc_attr(isset($shipping_phone) ? $shipping_phone : ''); ?>" placeholder="Shipping Mobile Number (Whatsapp)" required />
 </div>
 
 <div class="kodyt-form-row" style="margin-top:15px;">

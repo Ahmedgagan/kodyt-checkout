@@ -10,13 +10,20 @@ jQuery(document).ready(function($) {
     window.kodytItiInstance = null; 
     window.kodytAccountItiInstance = null;
     window.kodytProfileItiInstance = null;
+    window.kodytShippingItiInstance = null; // ◄ NEW: Scoped shipping instance
     let accountOtpTimerInstance = null;
 
     function runDynamicInitializers() {
+          // Read the injected country list array from localization parameters
+        const allowedCountries = params.allowed_countries || [];
+        // Fallback logic: If 'in' is not in the allowed list, default to the first allowed country, otherwise default to 'in'
+        const defaultCountry = allowedCountries.includes('in') ? 'in' : (allowedCountries[0] || 'in');
+
         const phoneInput = document.querySelector("#kodyt_auth_phone_active");
         if (phoneInput && !window.kodytItiInstance) {
             window.kodytItiInstance = window.intlTelInput(phoneInput, {
                 initialCountry: "in", separateDialCode: true,
+                onlyCountries: allowedCountries.length ? allowedCountries : undefined,
                 utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js"
             });
             $(phoneInput).closest('.iti').css('width', '100%');
@@ -26,13 +33,26 @@ jQuery(document).ready(function($) {
         if (accountPhoneInput && !window.kodytAccountItiInstance) {
             window.kodytAccountItiInstance = window.intlTelInput(accountPhoneInput, {
                 initialCountry: "in", separateDialCode: true,
+                onlyCountries: allowedCountries.length ? allowedCountries : undefined,
                 utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js"
             });
             $(accountPhoneInput).closest('.iti').css('width', '100%');
         }
+
+        // ◄ NEW: Initialize international dropdown on the Shipping Phone field
+        const shippingPhoneInput = document.querySelector("#kodyt_shipping_phone");
+        if (shippingPhoneInput && !window.kodytShippingItiInstance) {
+            window.kodytShippingItiInstance = window.intlTelInput(shippingPhoneInput, {
+                initialCountry: "in", separateDialCode: true,
+                onlyCountries: allowedCountries.length ? allowedCountries : undefined,
+                utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js"
+            });
+            $(shippingPhoneInput).closest('.iti').css('width', '100%');
+        }
     }
 
     runDynamicInitializers();
+    // Keep your cascading initializer safety hooks active
     setTimeout(runDynamicInitializers, 300);
     setTimeout(runDynamicInitializers, 1200);
 

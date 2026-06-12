@@ -128,7 +128,6 @@ class Kodyt_Notification_Handler
           'shipping_address' => $shipping_address_string, // ◄ Passes crisp, de-duplicated address line
           'isUsingCustomKey' => false
         );
-
         // Perform non-blocking background network post to keep checkout instant
         wp_remote_post('https://api.kodyt.com/v1/orders/create', array(
           'timeout'     => 10,

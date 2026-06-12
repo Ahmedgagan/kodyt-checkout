@@ -91,9 +91,25 @@
     color: #0f172a;
 }
 
+/* Ensure the form row handles child elements predictably */
 .kodyt-form-row {
-    display: flex;
-    gap: 15px;
+    display: flex !important;
+    gap: 15px !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+}
+
+/* Force BOTH the email input and the telephone wrapper div to take exactly 50% width */
+.kodyt-form-row > input[type="email"],
+.kodyt-form-row > .iti {
+    flex: 1 1 50% !important;
+    max-width: calc(50% - 7.5px) !important; /* Subtracts half of the 15px gap */
+    min-width: 0 !important;
+}
+
+/* Ensure the telephone input stretches completely inside its 50% wrapper allocation */
+.kodyt-form-row .iti input[type="tel"] {
+    width: 100% !important;
 }
 
 .kodyt-form-row input {
