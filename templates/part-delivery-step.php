@@ -15,6 +15,7 @@ if (!isset($shipping_phone)) {
 } else {
   $shipping_phone = "+" . $shipping_phone;
 }
+
 ?>
 
 <div id="kodyt-saved-addresses-target" style="<?php echo $is_verified ? 'display:block;' : 'display:none;'; ?> margin-bottom:20px;">
@@ -22,28 +23,46 @@ if (!isset($shipping_phone)) {
   if ($is_verified && $uid > 0) {
     // Calling our infrastructure processor method layer securely
     $native_addresses = Kodyt_User_Bridge::get_native_woocommerce_addresses();
+
     if (! empty($native_addresses)) {
       echo '<div class="kodyt-saved-addresses-wrapper">';
       echo '<p class="kodyt-section-label">Use your saved address records:</p>';
       echo '<div class="kodyt-addresses-grid">';
-      foreach ($native_addresses as $addr) {
+      $is_first = true; // Track the first item
 
-        echo '<div class="kodyt-address-card selected"
-                data-fname="' . esc_attr($addr['first_name']) . '"
-                data-lname="' . esc_attr($addr['last_name']) . '"
-                data-email="' . esc_attr($addr['email']) . '"
-                data-sphone="' . esc_attr("+" . $addr['shipping_phone']) . '"
-                data-addr1="' . esc_attr($addr['address_1']) . '"
-                data-hnumber="' . esc_attr($addr['house_number']) . '"
-                data-city="' . esc_attr($addr['city']) . '"
-                data-postcode="' . esc_attr($addr['postcode']) . '"
-                data-country="' . esc_attr($addr['country']) . '">';
+      foreach ($native_addresses as $addr) {
+        $formatted_phone = $addr['phone'];
+        if (str_starts_with($formatted_phone, '91')) {
+          $formatted_phone = "+" . $formatted_phone;
+        }
+
+        // Determine the class based on whether it is the first item
+        $class_attr = $is_first ? 'kodyt-address-card selected' : 'kodyt-address-card';
+
+        echo '<div class="' . $class_attr . '"
+            data-fname="' . esc_attr($addr['first_name']) . '"
+            data-lname="' . esc_attr($addr['last_name']) . '"
+            data-email="' . esc_attr($addr['email']) . '"
+            data-sphone="' . esc_attr($formatted_phone) . '"
+            data-addr1="' . esc_attr($addr['address_1']) . '"
+            data-hnumber="' . esc_attr($addr['house_number']) . '"
+            data-city="' . esc_attr($addr['city']) . '"
+            data-postcode="' . esc_attr($addr['postcode']) . '"
+            data-country="' . esc_attr($addr['country']) . '">';
         echo '<span class="kodyt-address-type">' . esc_html($addr['type']) . '</span>';
         echo '<strong>' . esc_html($addr['first_name'] . ' ' . $addr['last_name']) . '</strong>';
         echo '<p>' . esc_html($addr['house_number'] . ', ' . $addr['address_1'] . ', ' . $addr['city']) . '</p>';
-        echo '<span class="kodyt-badge">Selected</span>';
+
+        // Only display the selected badge for the first item
+        if ($is_first) {
+          echo '<span class="kodyt-badge">Selected</span>';
+        }
+
         echo '</div>';
+
+        $is_first = false; // Turn off for all subsequent items
       }
+
       echo '</div></div>';
     }
   }
