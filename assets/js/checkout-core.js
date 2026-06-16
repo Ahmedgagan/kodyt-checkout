@@ -8,6 +8,7 @@
 
 jQuery(document).ready(function ($) {
   const params = kodyt_checkout_params;
+  let pinDelayTimeout = null;
 
   // Custom pipeline event handler: Hydrates addresses during steps processing
   $(document).on("kodyt_auth_address_sync", function (e, addr, phoneNum) {
@@ -38,9 +39,11 @@ jQuery(document).ready(function ($) {
 
   $(document).on("click", ".kodyt-address-card", function () {
     $(".kodyt-address-card").removeClass("selected");
+    $(".kodyt-address-card").find(".kodyt-badge").remove();
     $(this).addClass("selected");
 
     let d = $(this).data();
+    $(this).append('<span class="kodyt-badge">Selected</span>');
     $("#kodyt_shipping_first_name").val(d.fname);
     $("#kodyt_shipping_last_name").val(d.lname);
     $("#kodyt_shipping_email").val(d.email);
@@ -63,6 +66,95 @@ jQuery(document).ready(function ($) {
     $("#kodyt_shipping_city").val(d.city);
     $("#kodyt_shipping_postcode").val(d.postcode);
     $("#kodyt_shipping_country").val(d.country);
+
+    if (d.postcode && d.postcode.toString().trim().length >= 6) {
+      $("#kodyt_shipping_postcode").trigger("change");
+    }
+  });
+
+  /* ==========================================================
+     KODYT DYNAMIC INLINE PINCODE VALIDATION SYSTEM (BACKEND AJAX)
+  ========================================================== */
+  function updatePincodeStatusMessage(fieldElement, status, textMessage) {
+    if (!fieldElement || fieldElement.length === 0) return;
+
+    const feedbackClass = "kodyt-pin-msg-" + fieldElement.attr("id");
+    $("." + feedbackClass).remove(); // Clear historical status lines
+
+    let styles =
+      "font-size: 13px; margin-top: 5px; display: block; font-weight: 500; transition: all 0.2s ease;";
+    if (status === "success") {
+      styles += " color: #16a34a;"; // Emerald Green
+    } else if (status === "error") {
+      styles += " color: #dc2626;"; // Crimson Red
+    } else {
+      styles += " color: #6b7280;"; // Slate Grey
+    }
+
+    fieldElement.after(
+      '<span class="' +
+        feedbackClass +
+        '" style="' +
+        styles +
+        '">' +
+        textMessage +
+        "</span>",
+    );
+  }
+
+  $(document).on("change", "#kodyt_shipping_postcode", function () {
+    const currentField = $(this);
+    const pincodeValue = currentField.val().trim();
+
+    if (pincodeValue.length === 0) {
+      $(".kodyt-pin-msg-" + currentField.attr("id")).remove();
+      return;
+    }
+
+    if (pincodeValue.length < 6) {
+      updatePincodeStatusMessage(
+        currentField,
+        "pending",
+        "✍️ Typing pincode...",
+      );
+      return;
+    }
+
+    clearTimeout(pinDelayTimeout);
+    pinDelayTimeout = setTimeout(function () {
+      updatePincodeStatusMessage(currentField, "pending", "🔍 Checking...");
+
+      // Redirect request to your local WordPress server action block
+      $.post(
+        params.ajax_url,
+        {
+          action: "kodyt_validate_pincode",
+          pincode: pincodeValue,
+        },
+        function (response) {
+          if (
+            response &&
+            (response.success === true || response.success === "true")
+          ) {
+            updatePincodeStatusMessage(
+              currentField,
+              "success",
+              `✅ Pincode is valid`,
+            );
+          } else {
+            updatePincodeStatusMessage(
+              currentField,
+              "error",
+              "❌ Pincode is not valid / serviceable",
+            );
+          }
+        },
+        "json",
+      ).fail(function () {
+        // Fail-safe silent clearing on connection drops
+        $(".kodyt-pin-msg-" + currentField.attr("id")).remove();
+      });
+    }, 500);
   });
 
   $("#kodyt-btn-shipping-mock").on("click", function () {

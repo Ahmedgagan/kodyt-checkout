@@ -63,4 +63,8 @@
 
     .kodyt-input-group { flex-direction: column; gap: 8px; }
     .kodyt-input-group button { width: 100% !important; }
+
+    #kodyt_shipping_postcode_container {
+        width: 100%;
+    }
 }

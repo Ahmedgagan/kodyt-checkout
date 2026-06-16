@@ -13,8 +13,52 @@ class Kodyt_Checkout_Core
     add_action('wp_head', array($this, 'inject_global_design_variables'));
     add_action('wp_ajax_kodyt_process_checkout', array($this, 'process_final_checkout'));
     add_action('wp_ajax_nopriv_kodyt_process_checkout', array($this, 'process_final_checkout'));
+    add_action('wp_ajax_kodyt_validate_pincode', array($this, 'ajax_backend_pincode_verification'));
+    add_action('wp_ajax_nopriv_kodyt_validate_pincode', array($this, 'ajax_backend_pincode_verification'));
     add_action('init', array($this, 'register_pending_confirmation_order_status'));
     add_filter('wc_order_statuses', array($this, 'add_pending_confirmation_to_order_statuses'));
+  }
+
+  /**
+   * Server-Side Proxy: Validates pincodes via api.kodyt.com to completely bypass browser CORS rules.
+   */
+  public function ajax_backend_pincode_verification()
+  {
+    // Verify request payload inputs safely
+    if (!isset($_POST['pincode'])) {
+      wp_send_json_error(array('message' => 'Missing parameter input configuration.'));
+    }
+
+    $creds = class_exists('Kodyt_Api_Client') ? Kodyt_Api_Client::get_credentials() : array('license_key' => '', 'domain' => '');
+
+    $pincode = sanitize_text_field($_POST['pincode']);
+    // $license_key = get_option('kodyt_checkout_license_key', 'test-key-1234');
+    // $site_domain = wp_parse_url(home_url(), PHP_URL_HOST);
+
+    // Formulate clean destination request URL
+    $api_url = sprintf(
+      'http://api.kodyt.com/v1/pincode/%s?license_key=%s&domain=%s',
+      urlencode($pincode),
+      urlencode($creds['license_key']),
+      urlencode($creds['domain'])
+    );
+
+    // Fire safe out-of-band server-to-server request
+    $response = wp_remote_get($api_url, array('timeout' => 8, 'sslverify' => false));
+
+    if (is_wp_error($response)) {
+      wp_send_json_error(array('message' => 'Verification gateway unreachable.'));
+    }
+
+    $response_code = wp_remote_retrieve_response_code($response);
+    $response_body = json_decode(wp_remote_retrieve_body($response), true);
+
+    if (200 !== $response_code || empty($response_body)) {
+      wp_send_json_error(array('message' => 'Invalid configuration endpoint parameters returned.'));
+    }
+
+    // Return the response data directly to your frontend script
+    wp_send_json($response_body);
   }
 
   public function register_pending_confirmation_order_status()

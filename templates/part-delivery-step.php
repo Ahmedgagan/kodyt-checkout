@@ -94,7 +94,9 @@ if (!isset($shipping_phone)) {
 
 <div class="kodyt-form-row" style="margin-top:15px;">
   <input type="text" name="kodyt_shipping_city" id="kodyt_shipping_city" value="<?php echo esc_attr($is_verified ? WC()->customer->get_shipping_city() : ''); ?>" placeholder="City" required />
-  <input type="text" name="kodyt_shipping_postcode" id="kodyt_shipping_postcode" value="<?php echo esc_attr($is_verified ? WC()->customer->get_shipping_postcode() : ''); ?>" placeholder="Postal Code" required />
+  <div id="kodyt_shipping_postcode_container">
+    <input type="text" name="kodyt_shipping_postcode" id="kodyt_shipping_postcode" value="<?php echo esc_attr($is_verified ? WC()->customer->get_shipping_postcode() : ''); ?>" placeholder="Postal Code" required />
+  </div>
   <input type="text" name="kodyt_shipping_country" id="kodyt_shipping_country" value="<?php echo esc_attr($is_verified ? WC()->customer->get_shipping_country() : ''); ?>" placeholder="Country Code (e.g. IN, US)" required />
 </div>
 
