@@ -37,7 +37,7 @@ class Kodyt_Auth_Handler
     $creds = Kodyt_Api_Client::get_credentials();
     $token = Kodyt_Api_Client::get_session_token();
 
-    $response = wp_remote_post('https://api.kodyt.com/v1/send-otp', array(
+    $response = wp_remote_post(API_URL . '/v1/send-otp', array(
       'timeout' => 15,
       'headers' => array('Content-Type' => 'application/json; charset=utf-8'),
       'body'    => wp_json_encode(array(
@@ -65,7 +65,7 @@ class Kodyt_Auth_Handler
     $creds = Kodyt_Api_Client::get_credentials();
     $token = Kodyt_Api_Client::get_session_token();
 
-    $response = wp_remote_post('https://api.kodyt.com/v1/verify-otp', array(
+    $response = wp_remote_post(API_URL . '/v1/verify-otp', array(
       'timeout' => 15,
       'headers' => array('Content-Type' => 'application/json; charset=utf-8'),
       'body'    => wp_json_encode(array('license_key' => $creds['license_key'], 'domain' => $creds['domain'], 'session_token' => $token, 'phone_number' => $phone, 'otp' => $otp))
@@ -115,7 +115,7 @@ class Kodyt_Auth_Handler
     $creds = Kodyt_Api_Client::get_credentials();
     $token = Kodyt_Api_Client::get_session_token();
 
-    $response = wp_remote_post('https://api.kodyt.com/v1/verify-otp', array(
+    $response = wp_remote_post(API_URL . '/v1/verify-otp', array(
       'timeout' => 15,
       'headers' => array('Content-Type' => 'application/json; charset=utf-8'),
       'body'    => wp_json_encode(array('license_key' => $creds['license_key'], 'domain' => $creds['domain'], 'session_token' => $token, 'phone_number' => $phone, 'otp' => $otp))
@@ -157,7 +157,7 @@ class Kodyt_Auth_Handler
     $creds = Kodyt_Api_Client::get_credentials();
     $token = Kodyt_Api_Client::get_session_token();
 
-    $response = wp_remote_post('https://api.kodyt.com/v1/verify-otp', array(
+    $response = wp_remote_post(API_URL . '/v1/verify-otp', array(
       'timeout' => 15,
       'headers' => array('Content-Type' => 'application/json; charset=utf-8'),
       'body'    => wp_json_encode(array('license_key' => $creds['license_key'], 'domain' => $creds['domain'], 'session_token' => $token, 'phone_number' => $phone, 'otp' => $otp))

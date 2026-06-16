@@ -128,7 +128,7 @@ class Kodyt_Checkout_Settings
       $payload['license_key'] = isset($creds['license_key']) ? $creds['license_key'] : '';
       $payload['domain'] = isset($creds['domain']) ? $creds['domain'] : '';
 
-      $response = wp_remote_post('https://api.kodyt.com/v1/keys/update', array(
+      $response = wp_remote_post(API_URL . '/v1/keys/update', array(
         'method'    => 'PATCH',
         'timeout'   => 15,
         'blocking'  => true,

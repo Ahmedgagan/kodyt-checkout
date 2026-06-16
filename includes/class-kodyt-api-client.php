@@ -22,7 +22,7 @@ class Kodyt_Api_Client
     $session_url = add_query_arg(array(
       'license_key' => urlencode($creds['license_key']),
       'domain'      => urlencode($creds['domain'])
-    ), 'https://api.kodyt.com/v1/start-session');
+    ), API_URL . '/v1/start-session');
 
     $response = wp_remote_get($session_url, array('timeout' => 15, 'sslverify' => false));
     if (is_wp_error($response)) {

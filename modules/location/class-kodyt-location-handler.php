@@ -25,7 +25,7 @@ class Kodyt_Location_Handler
       'domain'        => $creds['domain'],
       'session_token' => $token,
       'input'         => urlencode($query)
-    ), 'https://api.kodyt.com/v1/autocomplete');
+    ), API_URL . '/v1/autocomplete');
 
     $response = wp_remote_get($url, array('timeout' => 15));
     if (ob_get_length()) ob_clean();
@@ -54,7 +54,7 @@ class Kodyt_Location_Handler
     $creds = Kodyt_Api_Client::get_credentials();
     $token = Kodyt_Api_Client::get_session_token();
 
-    $response = wp_remote_post('https://api.kodyt.com/v1/validate', array(
+    $response = wp_remote_post(API_URL . '/v1/validate', array(
       'timeout' => 15,
       'headers' => array('Content-Type' => 'application/json; charset=utf-8'),
       'body'    => wp_json_encode(array('license_key' => $creds['license_key'], 'domain' => $creds['domain'], 'session_token' => $token, 'place_id' => $place_id, 'text' => $text))

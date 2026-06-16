@@ -134,7 +134,7 @@ class Kodyt_Notification_Handler
           'isUsingCustomKey' => false
         );
         // Perform non-blocking background network post to keep checkout instant
-        wp_remote_post('https://api.kodyt.com/v1/orders/create', array(
+        wp_remote_post(API_URL . '/v1/orders/create', array(
           'timeout'     => 10,
           'blocking'    => false,
           'headers'     => array('Content-Type' => 'application/json; charset=utf-8'),
