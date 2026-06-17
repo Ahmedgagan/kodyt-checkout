@@ -22,10 +22,10 @@ jQuery(document).ready(function ($) {
     }
     $("#kodyt_shipping_phone").val(addr.shipping_phone || phoneNum);
     $("#kodyt_shipping_autocomplete").val(addr.address_1 || "");
-    $("#kodyt_shipping_house_number").val(addr.hnumber || "");
+    $("#kodyt_shipping_address_2").val(addr.address_2 || "");
     $("#kodyt_shipping_city").val(addr.city || "");
+    $("#kodyt_shipping_state").val(addr.state || "");
     $("#kodyt_shipping_postcode").val(addr.postcode || "");
-    $("#kodyt_shipping_country").val(addr.country || "");
   });
 
   $(document).on("change", "#kodyt_different_billing", function () {
@@ -61,11 +61,11 @@ jQuery(document).ready(function ($) {
       $("#kodyt_shipping_phone").val(rawPhone);
     }
 
-    $("#kodyt_shipping_house_number").val(d.hnumber);
+    $("#kodyt_shipping_address_2").val(d.addr2);
     $("#kodyt_shipping_autocomplete").val(d.addr1);
     $("#kodyt_shipping_city").val(d.city);
+    $("#kodyt_shipping_state").val(d.state);
     $("#kodyt_shipping_postcode").val(d.postcode);
-    $("#kodyt_shipping_country").val(d.country);
 
     if (d.postcode && d.postcode.toString().trim().length >= 6) {
       $("#kodyt_shipping_postcode").trigger("change");
@@ -159,7 +159,7 @@ jQuery(document).ready(function ($) {
 
   $("#kodyt-btn-shipping-mock").on("click", function () {
     if (
-      !$("#kodyt_shipping_house_number").val() ||
+      !$("#kodyt_shipping_address_2").val() ||
       !$("#kodyt_shipping_autocomplete").val()
     ) {
       return alert(

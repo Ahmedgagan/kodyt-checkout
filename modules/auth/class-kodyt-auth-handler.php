@@ -93,10 +93,10 @@ class Kodyt_Auth_Handler
             'email'          => get_user_meta($user_id, 'billing_email', true),
             'shipping_phone' => get_user_meta($user_id, 'shipping_phone', true) ?: $phone,
             'address_1'      => $shipping_address,
-            'house_number'   => get_user_meta($user_id, 'shipping_house_number', true),
+            'address_2'   => get_user_meta($user_id, 'shipping_address_2', true),
             'city'           => get_user_meta($user_id, 'shipping_city', true),
+            'state'           => get_user_meta($user_id, 'shipping_state', true),
             'postcode'       => get_user_meta($user_id, 'shipping_postcode', true),
-            'country'        => get_user_meta($user_id, 'shipping_country', true)
           );
         }
       }

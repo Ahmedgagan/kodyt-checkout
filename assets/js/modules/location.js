@@ -76,11 +76,12 @@ jQuery(document).ready(function ($) {
             if (response.success) {
               let addr = response.data?.address || response.data;
               if (addr.street) $(inputSelector).val(addr.street);
-              if (addr.house_number || addr.building_number)
-                $(`#kodyt_${prefix}_house_number`).val(
-                  addr.house_number || addr.building_number,
+              if (addr.address_2 || addr.building_number)
+                $(`#kodyt_${prefix}_address_2`).val(
+                  addr.address_2 || addr.building_number,
                 );
               if (addr.city) $(`#kodyt_${prefix}_city`).val(addr.city);
+              if (addr.state) $(`#kodyt_${prefix}_state`).val(addr.state);
               let postcode =
                 addr.postcode || addr.zip || addr.postal_code || "";
               if (postcode) $(`#kodyt_${prefix}_postcode`).val(postcode);

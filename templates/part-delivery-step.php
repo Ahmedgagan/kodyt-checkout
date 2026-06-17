@@ -45,13 +45,13 @@ if (!isset($shipping_phone)) {
             data-email="' . esc_attr($addr['email']) . '"
             data-sphone="' . esc_attr($formatted_phone) . '"
             data-addr1="' . esc_attr($addr['address_1']) . '"
-            data-hnumber="' . esc_attr($addr['house_number']) . '"
+            data-addr2="' . esc_attr($addr['address_2']) . '"
             data-city="' . esc_attr($addr['city']) . '"
-            data-postcode="' . esc_attr($addr['postcode']) . '"
-            data-country="' . esc_attr($addr['country']) . '">';
+            data-state="' . esc_attr($addr['state']) . '"
+            data-postcode="' . esc_attr($addr['postcode']) . '">';
         echo '<span class="kodyt-address-type">' . esc_html($addr['type']) . '</span>';
         echo '<strong>' . esc_html($addr['first_name'] . ' ' . $addr['last_name']) . '</strong>';
-        echo '<p>' . esc_html($addr['house_number'] . ', ' . $addr['address_1'] . ', ' . $addr['city']) . '</p>';
+        echo '<p>' . esc_html($addr['address_2'] . ', ' . $addr['address_1'] . ', ' . $addr['city'] . ', ' . $addr['state']) . '</p>';
 
         // Only display the selected badge for the first item
         if ($is_first) {
@@ -84,7 +84,7 @@ if (!isset($shipping_phone)) {
 </div>
 
 <div class="kodyt-form-row" style="margin-top:15px;">
-  <input type="text" name="kodyt_shipping_house_number" id="kodyt_shipping_house_number" value="<?php echo esc_attr($is_verified ? get_user_meta(WC()->customer->get_id(), 'shipping_house_number', true) : ''); ?>" placeholder="House / Flat / Office No. *" required />
+  <input type="text" name="kodyt_shipping_address_2" id="kodyt_shipping_address_2" value="<?php echo esc_attr($is_verified ? WC()->customer->get_shipping_address_2() : ''); ?>" placeholder="House / Flat / Office No. *" required />
 </div>
 
 <div class="kodyt-autocomplete-wrapper" style="margin-top:15px;">
@@ -93,11 +93,11 @@ if (!isset($shipping_phone)) {
 </div>
 
 <div class="kodyt-form-row" style="margin-top:15px;">
-  <input type="text" name="kodyt_shipping_city" id="kodyt_shipping_city" value="<?php echo esc_attr($is_verified ? WC()->customer->get_shipping_city() : ''); ?>" placeholder="City" required />
   <div id="kodyt_shipping_postcode_container">
     <input type="text" name="kodyt_shipping_postcode" id="kodyt_shipping_postcode" value="<?php echo esc_attr($is_verified ? WC()->customer->get_shipping_postcode() : ''); ?>" placeholder="Postal Code" required />
   </div>
-  <input type="text" name="kodyt_shipping_country" id="kodyt_shipping_country" value="<?php echo esc_attr($is_verified ? WC()->customer->get_shipping_country() : ''); ?>" placeholder="Country Code (e.g. IN, US)" required />
+  <input type="text" name="kodyt_shipping_city" id="kodyt_shipping_city" value="<?php echo esc_attr($is_verified ? WC()->customer->get_shipping_city() : ''); ?>" placeholder="City" required />
+  <input type="text" name="kodyt_shipping_state" id="kodyt_shipping_state" value="<?php echo esc_attr($is_verified ? WC()->customer->get_shipping_state() : ''); ?>" placeholder="state" required />
 </div>
 
 <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9;">
@@ -118,8 +118,8 @@ if (!isset($shipping_phone)) {
   </div>
 
   <div class="kodyt-form-row" style="margin-top: 15px;">
-    <input type="text" name="kodyt_billing_house_number" id="kodyt_billing_house_number" placeholder="House / Unit No." />
-    <input type="text" name="kodyt_billing_city" id="kodyt_billing_city" placeholder="City" />
+    <input type="text" name="kodyt_billing_address_2" id="kodyt_billing_address_2" placeholder="House / Unit No." />
+    <input type="text" name="kodyt_billing_postcode" id="kodyt_billing_postcode" placeholder="Postcode" />
   </div>
 
   <div class="kodyt-form-row" style="margin-top: 15px;">
@@ -128,8 +128,8 @@ if (!isset($shipping_phone)) {
   </div>
 
   <div class="kodyt-form-row" style="margin-top: 15px;">
-    <input type="text" name="kodyt_billing_postcode" id="kodyt_billing_postcode" placeholder="Postcode" />
-    <input type="text" name="kodyt_billing_country" id="kodyt_billing_country" placeholder="Country" />
+    <input type="text" name="kodyt_billing_city" id="kodyt_billing_city" placeholder="City" />
+    <input type="text" name="kodyt_billing_state" id="kodyt_billing_state" placeholder="State" />
   </div>
 </div>
 

@@ -43,17 +43,17 @@ class Kodyt_Notification_Handler
       }
 
       // 4. Execute the defensive fallback cascading loop architecture 
-      $target_numbers = array();
+      $target_numbers = array($profile_dial_code . $profile_phone);
 
-      if ('billing' === $routing_strategy) {
-        $target_numbers[] = ! empty($billing_phone) ? $billing_phone : $shipping_phone;
-      } elseif ('shipping' === $routing_strategy) {
-        $target_numbers[] = ! empty($shipping_phone) ? $shipping_phone : $billing_phone;
-      } elseif ('profile' === $routing_strategy) {
-        if (! empty($profile_phone)) {
-          $target_numbers[] = $profile_dial_code . $profile_phone;
-        }
-      }
+      // if ('billing' === $routing_strategy) {
+      //   $target_numbers[] = ! empty($billing_phone) ? $billing_phone : $shipping_phone;
+      // } elseif ('shipping' === $routing_strategy) {
+      //   $target_numbers[] = ! empty($shipping_phone) ? $shipping_phone : $billing_phone;
+      // } elseif ('profile' === $routing_strategy) {
+      //   if (! empty($profile_phone)) {
+      //     $target_numbers[] = $profile_dial_code . $profile_phone;
+      //   }
+      // }
 
       $target_numbers = array_unique(array_filter($target_numbers));
 
@@ -76,40 +76,15 @@ class Kodyt_Notification_Handler
         $address_parts = $order->get_address('billing');
       }
 
-      $addr_1 = isset($address_parts['address_1']) ? trim($address_parts['address_1']) : '';
-      $addr_2 = isset($address_parts['address_2']) ? trim($address_parts['address_2']) : '';
-      $city   = isset($address_parts['city'])      ? trim($address_parts['city'])      : '';
-      $state  = isset($address_parts['state'])     ? trim($address_parts['state'])     : '';
-      $zip    = isset($address_parts['postcode'])  ? trim($address_parts['postcode'])  : '';
-      $cc     = isset($address_parts['country'])   ? trim($address_parts['country'])   : '';
-
       $address_lines = array();
 
-      // Standard checkout behavior checks
-      // If address_1 already contains the city or postcode (from a Google Map fill), 
-      // we avoid manually double-appending them to keep the string pristine.
-      $address_lines[] = $addr_1;
-      if (! empty($addr_2)) {
-        $address_lines[] = $addr_2;
-      }
+      $address_lines['address_2'] = isset($address_parts['address_2']) ? trim($address_parts['address_2']) : '';
+      $address_lines['address_1'] = isset($address_parts['address_1']) ? trim($address_parts['address_1']) : '';
+      $address_lines['city'] = isset($address_parts['city'])      ? trim($address_parts['city'])      : '';
+      $address_lines['state'] = isset($address_parts['state'])      ? trim($address_parts['state'])      : '';
+      $address_lines['pincode'] = isset($address_parts['postcode'])   ? trim($address_parts['postcode'])   : '';
+      $address_lines['phone'] = ! empty($shipping_phone) ? $shipping_phone : $billing_phone;
 
-      if (! empty($city) && stripos($addr_1, $city) === false) {
-        $address_lines[] = $city;
-      }
-      if (! empty($state) && stripos($addr_1, $state) === false) {
-        $address_lines[] = $state;
-      }
-      if (! empty($zip) && stripos($addr_1, $zip) === false) {
-        $address_lines[] = $zip;
-      }
-      if (! empty($cc) && stripos($addr_1, $cc) === false) {
-        $address_lines[] = $cc;
-      }
-
-      $shipping_address_string = implode(', ', array_filter($address_lines));
-      $shipping_address_string = wp_strip_all_tags(html_entity_decode($shipping_address_string));
-
-      // 7. Extract Total Amount
       $raw_total = $order->get_total();
       $clean_amount_string = number_format((float)$raw_total, 2, '.', '');
 
@@ -130,7 +105,7 @@ class Kodyt_Notification_Handler
           'customer_phone'   => $phone,
           'items'            => $items_flattened_string,
           'total_amount'     => $clean_amount_string, // ◄ Passes clean numeric string "1801.00"
-          'shipping_address' => $shipping_address_string, // ◄ Passes crisp, de-duplicated address line
+          'shipping_address' => $address_lines, // ◄ Passes crisp, de-duplicated address line
           'isUsingCustomKey' => false
         );
         // Perform non-blocking background network post to keep checkout instant

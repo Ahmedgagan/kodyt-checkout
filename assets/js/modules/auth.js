@@ -291,27 +291,27 @@ jQuery(document).ready(function ($) {
                                     data-email="${addr.email || ""}"
                                     data-sphone="${addr.shipping_phone || ""}"
                                     data-addr1="${addr.address_1 || ""}"
-                                    data-hnumber="${addr.house_number || ""}"
+                                    data-addr2="${addr.address_2 || ""}"
                                     data-city="${addr.city || ""}"
-                                    data-postcode="${addr.postcode || ""}"
-                                    data-country="${addr.country || ""}">
+                                    data-state="${addr.state || ""}"
+                                    data-postcode="${addr.postcode || ""}">
                                     <span class="kodyt-address-type">${addr.type || "Default"}</span>
                                     <strong>${addr.first_name || ""} ${addr.last_name || ""}</strong>
-                                    <p>${addr.address_1 || ""}, ${addr.city || ""}</p>
+                                    <p>${addr.address_1 || ""}, ${addr.city || ""}, ${addr.state || ""}</p>
                                     <span class="kodyt-badge">Selected</span>
                                 </div>
                             </div>
                         </div>`;
             $("#kodyt-saved-addresses-target").html(addressHtml).show();
-            $("#kodyt_shipping_house_number").val(addr.house_number || "");
+            $("#kodyt_shipping_address_2").val(addr.address_2 || "");
             $("#kodyt_shipping_first_name").val(addr.first_name || "");
             $("#kodyt_shipping_last_name").val(addr.last_name || "");
             $("#kodyt_shipping_email").val(addr.email || "");
             $("#kodyt_shipping_phone").val(addr.shipping_phone || phoneNum);
             $("#kodyt_shipping_autocomplete").val(addr.address_1 || "");
             $("#kodyt_shipping_city").val(addr.city || "");
+            $("#kodyt_shipping_state").val(addr.state || "");
             $("#kodyt_shipping_postcode").val(addr.postcode || "");
-            $("#kodyt_shipping_country").val(addr.country || "");
           }
 
           $("#kodyt_shipping_phone").val(phoneNum);

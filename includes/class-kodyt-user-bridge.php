@@ -68,11 +68,9 @@ class Kodyt_User_Bridge
         'company'        => $customer->get_shipping_company(),
         'address_1'      => $customer->get_shipping_address_1(),
         'address_2'      => $customer->get_shipping_address_2(),
-        'house_number'   => get_user_meta($customer->get_id(), 'shipping_house_number', true),
         'city'           => $customer->get_shipping_city(),
-        'state'          => $customer->get_shipping_state(),
+        'state'           => $customer->get_shipping_state(),
         'postcode'       => $customer->get_shipping_postcode(),
-        'country'        => $customer->get_shipping_country(),
         'phone'          => get_user_meta($customer->get_id(), 'shipping_phone', true) ?: $customer->get_billing_phone(),
         'email'          => $customer->get_billing_email() // Shipping doesn't have a native email field
       );
@@ -87,11 +85,9 @@ class Kodyt_User_Bridge
         'company'        => $customer->get_billing_company(),
         'address_1'      => $customer->get_billing_address_1(),
         'address_2'      => $customer->get_billing_address_2(),
-        'house_number'   => get_user_meta($customer->get_id(), 'billing_house_number', true),
+        'state'           => $customer->get_billing_state(),
         'city'           => $customer->get_billing_city(),
-        'state'          => $customer->get_billing_state(),
         'postcode'       => $customer->get_billing_postcode(),
-        'country'        => $customer->get_billing_country(),
         'phone'          => $customer->get_billing_phone(),
         'email'          => $customer->get_billing_email()
       );
