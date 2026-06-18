@@ -484,7 +484,7 @@ class Kodyt_Checkout_Core
       <div class="kodyt-input-group" id="kodyt-otp-verify-block" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px dashed #e2e8f0; max-width: 500px;">
         <div style="display: flex; gap: 12px; align-items: flex-start;">
           <div style="flex: 1;">
-            <input type="text" id="kodyt_account_otp_input" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0 12px; box-sizing: border-box; text-align: center; font-size: 15px; letter-spacing: 2px;" placeholder="<?php esc_attr_e('Verification Token', 'kodyt-checkout'); ?>" maxlength="6" />
+            <input type="number" inputmode="numeric" id="kodyt_account_otp_input" style="width: 100%; height: 44px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0 12px; box-sizing: border-box; text-align: center; font-size: 15px; letter-spacing: 2px;" placeholder="<?php esc_attr_e('Verification Token', 'kodyt-checkout'); ?>" maxlength="6" />
           </div>
           <div>
             <button type="button" id="kodyt-account-btn-verify-otp" style="height: 44px; background: #10b981; color: #fff; border: none; border-radius: 8px; padding: 0 20px; font-weight: 600; cursor: pointer; font-size: 13px; white-space: nowrap;">

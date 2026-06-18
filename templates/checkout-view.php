@@ -43,7 +43,7 @@
               ?>
             </div>
             <div class="kodyt-input-group" id="kodyt-otp-verify-block" style="display:none; margin-top:15px;">
-              <input type="text" id="kodyt_otp_code_input" placeholder="Enter OTP" maxlength="6" />
+              <input type="number" inputmode="numeric" id="kodyt_otp_code_input" placeholder="Enter OTP" maxlength="6" />
               <button type="button" id="kodyt-btn-verify-otp">Verify OTP</button>
             </div>
           </div>

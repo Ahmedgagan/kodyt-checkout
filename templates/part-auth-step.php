@@ -13,7 +13,7 @@ if (isset($is_phone_verified) && $is_phone_verified) : ?>
   </div>
 <?php else : ?>
   <div class="kodyt-input-group">
-    <input type="tel" id="kodyt_auth_phone_active" maxlength="10" placeholder="Mobile Number" required />
+    <input type="tel" inputmode="numeric" inputmode="numeric" id="kodyt_auth_phone_active" maxlength="10" placeholder="Mobile Number" required />
     <button type="button" id="kodyt-btn-send-otp">Send OTP</button>
   </div>
 <?php endif; ?>

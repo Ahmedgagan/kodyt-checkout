@@ -26,6 +26,8 @@ jQuery(document).ready(function ($) {
     if (phoneInput && !window.kodytItiInstance) {
       window.kodytItiInstance = window.intlTelInput(phoneInput, {
         initialCountry: defaultCountry,
+        formatOnDisplay: false,
+        numberDisplayFormat: "E164",
         separateDialCode: true,
         onlyCountries: allowedCountries.length ? allowedCountries : undefined,
         utilsScript:
@@ -38,6 +40,8 @@ jQuery(document).ready(function ($) {
     if (accountPhoneInput && !window.kodytAccountItiInstance) {
       window.kodytAccountItiInstance = window.intlTelInput(accountPhoneInput, {
         initialCountry: defaultCountry,
+        formatOnDisplay: false,
+        numberDisplayFormat: "E164",
         separateDialCode: true,
         onlyCountries: allowedCountries.length ? allowedCountries : undefined,
         utilsScript:
@@ -53,6 +57,8 @@ jQuery(document).ready(function ($) {
         shippingPhoneInput,
         {
           initialCountry: defaultCountry,
+          formatOnDisplay: false,
+          numberDisplayFormat: "E164",
           separateDialCode: true,
           onlyCountries: allowedCountries.length ? allowedCountries : undefined,
           utilsScript:
@@ -66,6 +72,8 @@ jQuery(document).ready(function ($) {
     if (billingPhoneInput && !window.kodytBillingItiInstance) {
       window.kodytBillingItiInstance = window.intlTelInput(billingPhoneInput, {
         initialCountry: defaultCountry,
+        formatOnDisplay: false,
+        numberDisplayFormat: "E164",
         separateDialCode: true,
         onlyCountries: allowedCountries.length ? allowedCountries : undefined,
         utilsScript:
@@ -86,7 +94,7 @@ jQuery(document).ready(function ($) {
     $("#kodyt-profile-phone-interactive-slot").html(`
             <div style="display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; width: 100%;">
                 <div style="flex: 1; min-width: 260px;">
-                    <input type="tel" id="kodyt_profile_phone_active" class="input-text" style="width: 100%; height: 42px; border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); border-radius: var(--kodyt-radius);" placeholder="Enter new mobile number" />
+                    <input type="tel" inputmode="numeric" id="kodyt_profile_phone_active" class="input-text" style="width: 100%; height: 42px; border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); border-radius: var(--kodyt-radius);" placeholder="Enter new mobile number" />
                 </div>
                 <div>
                     <button type="button" id="kodyt-profile-btn-trigger-action" class="button" style="height: 42px; padding: 0 20px; white-space: nowrap; background-color: var(--kodyt-secondary); color: var(--kodyt-secondary-text); border-radius: var(--kodyt-radius); border: none; font-size: 16px; font-weight: 600;">Verify Code</button>

@@ -47,7 +47,7 @@ $has_phone = ! empty($current_phone);
     </p>
 
     <div style="margin-bottom: 15px;">
-      <input type="text" id="kodyt_profile_modal_otp" class="input-text" style="width: 100%; height: 44px; text-align: center; font-size: 16px; letter-spacing: 4px; font-weight: 700; border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); border-radius: var(--kodyt-radius); color: var(--kodyt-text-base); background-color: #ffffff;" placeholder="000000" maxlength="6">
+      <input type="number" inputmode="numeric" id="kodyt_profile_modal_otp" class="input-text" style="width: 100%; height: 44px; text-align: center; font-size: 16px; letter-spacing: 4px; font-weight: 700; border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); border-radius: var(--kodyt-radius); color: var(--kodyt-text-base); background-color: #ffffff;" placeholder="000000" maxlength="6">
     </div>
 
     <div style="display: flex; gap: 10px; justify-content: flex-end;">

@@ -80,7 +80,7 @@ if (!isset($shipping_phone)) {
 
 <div class="kodyt-form-row" style="margin-top:15px;">
   <input type="email" name="kodyt_shipping_email" id="kodyt_shipping_email" value="<?php echo esc_attr($is_verified ? WC()->customer->get_billing_email() : ''); ?>" placeholder="Email Address" required />
-  <input type="tel" name="kodyt_shipping_phone" id="kodyt_shipping_phone" value="<?php echo esc_attr(isset($shipping_phone) ? $shipping_phone : ''); ?>" placeholder="Shipping Mobile Number (Whatsapp)" required />
+  <input type="tel" inputmode="numeric" name="kodyt_shipping_phone" id="kodyt_shipping_phone" value="<?php echo esc_attr(isset($shipping_phone) ? $shipping_phone : ''); ?>" placeholder="Shipping Mobile Number (Whatsapp)" required />
 </div>
 
 <div class="kodyt-form-row" style="margin-top:15px;">
@@ -124,7 +124,7 @@ if (!isset($shipping_phone)) {
 
   <div class="kodyt-form-row" style="margin-top: 15px;">
     <input type="email" name="kodyt_billing_email" id="kodyt_billing_email" placeholder="Billing Email Address" />
-    <input type="tel" name="kodyt_billing_phone" id="kodyt_billing_phone" placeholder="Billing Mobile Number" />
+    <input type="tel" inputmode="numeric" name="kodyt_billing_phone" id="kodyt_billing_phone" placeholder="Billing Mobile Number" />
   </div>
 
   <div class="kodyt-form-row" style="margin-top: 15px;">
