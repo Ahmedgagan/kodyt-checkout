@@ -178,7 +178,6 @@ class Kodyt_Checkout_Core
     $auth_dial_code     = isset($posted_data['kodyt_country_dial_code']) ? sanitize_text_field($posted_data['kodyt_country_dial_code']) : '';
 
     $shipping_dial_code = isset($posted_data['kodyt_shipping_country_dial_code']) ? sanitize_text_field($posted_data['kodyt_shipping_country_dial_code']) : '';
-    $billing_dial_code  = isset($posted_data['kodyt_billing_country_dial_code']) ? sanitize_text_field($posted_data['kodyt_billing_country_dial_code']) : ''; // ◄ NEW
 
     if (empty($auth_phone) || empty($user_id)) {
       wp_send_json_error(array('message' => 'Session expired. Execute step 1 verification again.'));
@@ -187,13 +186,6 @@ class Kodyt_Checkout_Core
     $raw_shipping_phone = sanitize_text_field($posted_data['kodyt_shipping_phone']);
     $raw_shipping_phone = str_replace(' ', '', $raw_shipping_phone);
     $raw_shipping_phone = substr($raw_shipping_phone, -10);
-
-    $raw_billing_phone  = isset($posted_data['kodyt_billing_phone']) ? sanitize_text_field($posted_data['kodyt_billing_phone']) : ''; // ◄ NEW
-    $raw_billing_phone = str_replace(' ', '', $raw_billing_phone);
-    $raw_billing_phone = substr($raw_billing_phone, -10);
-
-    // Formulate Shipping Number format layers
-    $formatted_shipping_phone = (!empty($shipping_dial_code) && strpos($raw_shipping_phone, $shipping_dial_code) !== 0) ? $shipping_dial_code . $raw_shipping_phone : $raw_shipping_phone;
 
     // Compile Dynamic Shipping Context Args
     $ship_address_2  = sanitize_text_field($posted_data['kodyt_shipping_address_2']);
@@ -207,58 +199,11 @@ class Kodyt_Checkout_Core
       'last_name'  => sanitize_text_field($posted_data['kodyt_shipping_last_name']),
       'address_2'  => $ship_address_2,
       'address_1'  => $ship_address_1,
-      'phone'      => $formatted_shipping_phone,
-      'city'       => sanitize_text_field($posted_data['kodyt_shipping_city']),
-      'state'       => sanitize_text_field($posted_data['kodyt_shipping_state']),
+      'phone'      => $raw_shipping_phone,
+      'city'       => $ship_city,
+      'state'       => $ship_state,
       'postcode'   => sanitize_text_field($posted_data['kodyt_shipping_postcode']),
     );
-
-    // ◄ UPDATED: Conditional routing check for standalone custom billing information layers
-    $is_different_billing = isset($posted_data['kodyt_different_billing']) && $posted_data['kodyt_different_billing'] == '1';
-
-    if ($is_different_billing) {
-      $formatted_billing_phone = (!empty($billing_dial_code) && strpos($raw_billing_phone, $billing_dial_code) !== 0) ? $billing_dial_code . $raw_billing_phone : $raw_billing_phone;
-
-      $bill_address_2 = sanitize_text_field($posted_data['kodyt_billing_address_2']);
-      $bill_address_1 = sanitize_text_field($posted_data['kodyt_billing_address_1']);
-      $bill_city    = sanitize_text_field($posted_data['kodyt_billing_city']);
-      $bill_state    = sanitize_text_field($posted_data['kodyt_billing_state']);
-      $bill_address_1  = $this->strip_redundant_address_components($bill_address_1, $bill_city);
-
-      update_user_meta($user_id, 'billing_address_2', $bill_address_2);
-      update_user_meta($user_id, 'billing_address_1', $bill_address_1);
-      update_user_meta($user_id, 'billing_phone', $formatted_billing_phone);
-      update_user_meta($user_id, 'billing_phone_country_dial_code', $billing_dial_code);
-      $billing_args = array(
-        'first_name' => $shipping_args['first_name'], // Inherits name layers
-        'last_name'  => $shipping_args['last_name'],
-        'email'      => sanitize_email($posted_data['kodyt_billing_email']), // Explicit separate billing email
-        'phone'      => $formatted_billing_phone, // Explicit separate billing phone
-        'address_2'  => $bill_address_2,
-        'address_1'  => $bill_address_1,
-        'city'       => sanitize_text_field($posted_data['kodyt_billing_city']),
-        'state'       => sanitize_text_field($posted_data['kodyt_billing_state']),
-        'postcode'   => sanitize_text_field($posted_data['kodyt_billing_postcode']),
-      );
-    } else {
-      // Default Fallback Scenario: Mirror Auth Profiling details perfectly
-      $formatted_auth_phone = (!empty($auth_dial_code) && strpos($auth_phone, $auth_dial_code) !== 0) ? $auth_dial_code . $auth_phone : $auth_phone;
-      update_user_meta($user_id, 'billing_address_2', $ship_address_2);
-      update_user_meta($user_id, 'billing_address_1', $ship_address_1);
-      update_user_meta($user_id, 'billing_phone', $formatted_auth_phone);
-      update_user_meta($user_id, 'billing_phone_country_dial_code', $auth_dial_code); // ◄ NEW
-      $billing_args = array(
-        'first_name' => $shipping_args['first_name'],
-        'last_name'  => $shipping_args['last_name'],
-        'email'      => sanitize_email($posted_data['kodyt_shipping_email']),
-        'phone'      => $formatted_auth_phone,
-        'address_2'  => $ship_address_2,
-        'address_1'  => $ship_address_1,
-        'city'       => $shipping_args['city'],
-        'state'       => $shipping_args['state'],
-        'postcode'   => $shipping_args['postcode']
-      );
-    }
 
     try {
       $order = wc_create_order();
@@ -266,27 +211,26 @@ class Kodyt_Checkout_Core
         $order->add_product($values['data'], $values['quantity'], array('variation' => $values['variation']));
       }
 
-      $order->set_address($billing_args, 'billing');
+      $order->set_address($shipping_args, 'billing');
       $order->set_address($shipping_args, 'shipping');
       $order->set_customer_id($user_id);
 
       // Sync Database Metadata Caches Securely
       update_user_meta($user_id, 'phone_number', $auth_phone);
-      update_user_meta($user_id, 'shipping_phone', $formatted_shipping_phone); // ◄ UPDATED
+      // update_user_meta($user_id, 'shipping_phone', $raw_shipping_phone); // ◄ UPDATED
 
-      if (! empty($country_code)) update_user_meta($user_id, 'phone_country_dial_code', $country_code);
+      // if (! empty($country_code)) update_user_meta($user_id, 'phone_country_dial_code', $country_code);
 
-      update_user_meta($user_id, 'billing_email', $billing_args['email']);
-      update_user_meta($user_id, 'shipping_first_name', $shipping_args['first_name']);
-      update_user_meta($user_id, 'shipping_last_name', $shipping_args['last_name']);
-      update_user_meta($user_id, 'shipping_address_1', $ship_address_1);
-      update_user_meta($user_id, 'shipping_address_2', $ship_address_2);
-      update_user_meta($user_id, 'shipping_city', $shipping_args['city']);
-      update_user_meta($user_id, 'shipping_state', $shipping_args['state']);
-      update_user_meta($user_id, 'shipping_postcode', $shipping_args['postcode']);
+      // update_user_meta($user_id, 'shipping_first_name', $shipping_args['first_name']);
+      // update_user_meta($user_id, 'shipping_last_name', $shipping_args['last_name']);
+      // update_user_meta($user_id, 'shipping_address_1', $ship_address_1);
+      // update_user_meta($user_id, 'shipping_address_2', $ship_address_2);
+      // update_user_meta($user_id, 'shipping_city', $shipping_args['city']);
+      // update_user_meta($user_id, 'shipping_state', $shipping_args['state']);
+      // update_user_meta($user_id, 'shipping_postcode', $shipping_args['postcode']);
 
-      if (! empty($auth_dial_code)) update_user_meta($user_id, 'phone_country_dial_code', $auth_dial_code);
-      if (! empty($shipping_dial_code)) update_user_meta($user_id, 'shipping_phone_country_dial_code', $shipping_dial_code); // ◄ NEW
+      // if (! empty($auth_dial_code)) update_user_meta($user_id, 'phone_country_dial_code', $auth_dial_code);
+      // if (! empty($shipping_dial_code)) update_user_meta($user_id, 'shipping_phone_country_dial_code', $shipping_dial_code); // ◄ NEW
 
       $order->calculate_totals();
       $payment_method = sanitize_text_field($posted_data['kodyt_payment_method']);
@@ -476,10 +420,14 @@ class Kodyt_Checkout_Core
       <h4 style="margin: 0 0 6px 0; font-size: 16px; color: #0f172a; font-weight: 700;"><?php _e('Fast OTP Authentication', 'kodyt-checkout'); ?></h4>
       <p style="margin: 0 0 16px 0; font-size: 13px; color: #64748b; line-height: 1.4;"><?php _e('Bypass passwords. Enter your mobile number below to log in or register an account instantly.', 'kodyt-checkout'); ?></p>
 
-      <?php
-      // 1. Bring in the untouched, clean phone input layout from your template
-      include KODYT_CHECKOUT_PATH . 'templates/part-auth-step.php';
-      ?>
+      <div style="display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; width: 100%;">
+        <div style="flex: 1; max-width: 260px;">
+          <input type="tel" inputmode="numeric" id="kodyt_auth_phone_active" class="input-text" style="width: 100%; height: 42px; border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); border-radius: var(--kodyt-radius);" placeholder="Enter new mobile number" />
+        </div>
+        <div>
+          <button type="button" id="kodyt-btn-send-otp" class="button" style="height: 42px; padding: 0 20px; white-space: nowrap; background-color: var(--kodyt-secondary); color: var(--kodyt-secondary-text); border-radius: var(--kodyt-radius); border: none; font-size: 16px; font-weight: 600;">Verify Code</button>
+        </div>
+      </div>
 
       <div class="kodyt-input-group" id="kodyt-otp-verify-block" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px dashed #e2e8f0; max-width: 500px;">
         <div style="display: flex; gap: 12px; align-items: flex-start;">

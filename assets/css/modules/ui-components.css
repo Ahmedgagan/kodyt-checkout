@@ -1,69 +1,152 @@
-.kodyt-verified-phone-container-card { 
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between; 
-    background: #f8fafc; 
-    border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); 
-    border-radius: var(--kodyt-radius); 
-    padding: 14px 18px; 
-    width: 100%; 
-    margin-bottom: 5px; 
-}
-.kodyt-verified-text-details { display: flex; flex-direction: column; gap: 3px; }
-.kodyt-meta-eyebrow { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.05em; }
-.kodyt-confirmed-phone-number { font-size: 16px; font-weight: 700; color: var(--kodyt-text-heading); }
-.kodyt-saved-addresses-wrapper { 
-    margin-bottom: 24px; 
-    background: #f8fafc; 
-    padding: 16px; 
-    border-radius: var(--kodyt-radius); 
-    border: 1px dashed var(--kodyt-input-border-color); 
-}
-.kodyt-addresses-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
-.kodyt-address-card { 
-    flex: 0 0 220px; 
-    background: #ffffff; 
-    border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); 
-    border-radius: var(--kodyt-radius); 
-    padding: 12px; 
-    cursor: pointer; 
-    position: relative; 
-    transition: all 0.2s ease; 
-}
-.kodyt-address-card.selected { 
-    border-color: var(--kodyt-success); 
-    background-color: #f0fdf4; 
-}
-.kodyt-autocomplete-wrapper { position: relative !important; width: 100%; display: block; }
-.kodyt-suggestions-box { 
-    position: absolute !important; 
-    top: 100% !important; 
-    left: 0 !important; 
-    right: 0 !important; 
-    background: #ffffff !important; 
-    border: 1px solid var(--kodyt-input-border-color) !important; 
-    border-radius: var(--kodyt-radius) !important; 
-    margin-top: 4px !important; 
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important; 
-    max-height: 260px !important; 
-    overflow-y: auto !important; 
-    display: none; 
-    z-index: 999999 !important; 
-}
-.kodyt-suggestion-item { padding: 12px 16px !important; font-size: 14px !important; color: var(--kodyt-text-base) !important; cursor: pointer !important; }
-.kodyt-suggestion-item:hover { 
-    background: #f5f3ff !important; 
-    color: var(--kodyt-primary) !important; 
-}
-.kodyt-input-group .iti, #kodyt-checkout-phone-interactive-slot .iti { width: 100% !important; display: flex !important; }
-.iti__country-list { z-index: 999999 !important; background: #ffffff !important; }
+/* =========================================================================
+   KODYT CHECKOUT: APP WRAPPERS & SLIDING SHEET MODALS
+   ========================================================================= */
 
-.kodyt-section-label { font-size: 13px; font-weight: 600; color: #475569; margin: 0 0 12px 0; }
-.kodyt-address-type { display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 4px; }
-.kodyt-address-card strong { font-size: 13px; display: block; margin-bottom: 4px; color: var(--kodyt-text-heading); }
-.kodyt-address-card p { font-size: 11px; color: #64748b; margin: 0; line-height: 1.4; }
-.kodyt-address-card .kodyt-badge { display: inline-block; font-size: 11px; font-weight: 600; color: var(--kodyt-success); margin-top: 8px; }
+/* Standalone Clean Coupon Box Components */
+.kodyt-checkout-canvas-shell .kodyt-checkout-white-card {
+    background: #ffffff !important;
+    border: var(--kodyt-step-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color) !important;
+    border-radius: var(--kodyt-radius) !important;
+    padding: var(--kodyt-step-padding) !important;
+    margin: 12px 12px 0 12px !important;
+    box-shadow: none !important;
+}
 
-.kodyt-checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #475569; cursor: pointer; user-select: none; }
-.kodyt-checkbox-label input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--kodyt-primary); cursor: pointer; }
-.kodyt-address-section-header h6 { font-size: 14px; font-weight: 700; color: var(--kodyt-text-heading); margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+.kodyt-checkout-canvas-shell .kodyt-section-label-heading-gray {
+    font-size: 11px;
+    font-weight: 700;
+    color: #718096;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-coupon-input-group {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.kodyt-checkout-canvas-shell #kodyt-coupon-code-input {
+    flex: 1 !important;
+}
+
+.kodyt-checkout-canvas-shell #kodyt-btn-apply-coupon {
+    height: 48px !important;
+    background: var(--kodyt-secondary) !important;
+    color: var(--kodyt-secondary-text) !important;
+    border-radius: var(--kodyt-radius) !important;
+    padding: 0 18px !important;
+    font-weight: 700 !important;
+}
+
+/* Delivery Details flex box elements alignments */
+.kodyt-address-summary-display-flex {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.kodyt-pin-marker-icon { font-size: 15px; margin-top: 1px; }
+.kodyt-address-summary-string-lines { flex: 1; }
+.kodyt-address-summary-string-lines strong { font-size: 14px; display: block; margin-bottom: 2px; }
+.kodyt-address-summary-string-lines p { font-size: 12px; color: #4a5568; margin: 0; line-height: 1.4; }
+.kodyt-address-summary-string-lines span { font-size: 12px; color: #718096; display: block; margin-top: 2px; }
+
+/* Modal drawer overlay container properties locks */
+.kodyt-checkout-modal-overlay {
+    position: fixed !important;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.4) !important;
+    backdrop-filter: blur(2px);
+    z-index: 99999999 !important;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.kodyt-checkout-bottom-sheet-card {
+    width: 100%;
+    max-width: 460px;
+    background: #ffffff;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px;
+    position: relative;
+    box-sizing: border-box;
+    box-shadow: 0 -10px 25px rgba(0,0,0,0.05);
+}
+
+.animate-bottom-sheet {
+    animation: checkoutSheetSlideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes checkoutSheetSlideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.kodyt-modal-close-trigger-circle {
+    position: absolute;
+    top: -42px; left: 50%;
+    transform: translateX(-50%);
+    width: 30px; height: 32px;
+    background: #ffffff !important;
+    border: none !important;
+    border-radius: 50% !important;
+    font-size: 18px !important;
+    color: #1a202c !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* 6-Digit split field alignment layouts for OTP verification values */
+.kodyt-digit-otp-inputs-grid-wrap {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 20px 0;
+}
+
+.kodyt-otp-digit-cell {
+    width: 44px !important;
+    height: 46px !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 10px !important;
+    text-align: center !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #111827 !important;
+    background: #ffffff !important;
+}
+
+/* Saved Address Selector vertical lists frameworks */
+.kodyt-drawer-header-row-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #edf2f7;
+    padding-bottom: 12px;
+}
+
+.kodyt-drawer-header-row-flex h4 { margin: 0; font-size: 14px; font-weight: 700; }
+.kodyt-checkout-add-new-address-action-button { background: #ffffff !important; border: 1px solid var(--kodyt-primary) !important; color: var(--kodyt-primary) !important; border-radius: var(--kodyt-radius) !important; height: 34px !important; font-size: 12px !important; font-weight: 700 !important; cursor: pointer !important; padding: 0 12px !important; }
+
+.kodyt-drawer-address-row-card {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    background: #ffffff;
+}
+
+.kodyt-drawer-address-row-card.selected-row-default {
+    border-color: var(--kodyt-primary);
+    background: #fbfbfe;
+}
+
+.kodyt-card-name-row { display: flex; align-items: center; gap: 6px; font-size: 13px; margin-bottom: 2px; }
+.badge-type-home { font-size: 9px; background: #edf2f7; color: #4a5568; font-weight: 700; padding: 1px 5px; border-radius: 4px; text-transform: uppercase; }
+.kodyt-row-card-right-details p { font-size: 12px; color: #4a5568; margin: 0 0 8px 0; line-height: 1.4; text-align: left; }
+.kodyt-btn-deliver-here-action-trigger { width: 100% !important; height: 36px !important; background: var(--kodyt-primary) !important; color: var(--kodyt-primary-text) !important; border: none !important; border-radius: var(--kodyt-radius) !important; font-weight: 700 !important; font-size: 13px !important; cursor: pointer !important; }

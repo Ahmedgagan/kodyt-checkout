@@ -1,92 +1,446 @@
 /**
- * Feature Module: Phone Authentication & Verification
+ * Headless Multi-Step Layout Application Controller Logic
  */
-
 jQuery(document).ready(function ($) {
   const params = kodyt_checkout_params;
-  let targetPendingNewPhone = "";
+  let resendTimerId = null;
 
-  // Scoped Initialization State Hooks
-  window.kodytItiInstance = null;
-  window.kodytAccountItiInstance = null;
-  window.kodytProfileItiInstance = null;
-  window.kodytShippingItiInstance = null;
-  window.kodytBillingItiInstance = null;
-  let accountOtpTimerInstance = null;
+  // Navigation back chevron handler
+  $(document).on("click", ".kodyt-nav-back-button", function (e) {
+    e.preventDefault();
+    if ($("#kodyt-flow-screen-two-workspace").is(":visible")) {
+      $("#kodyt-flow-screen-two-workspace").hide();
+      $("#kodyt-flow-screen-one-auth").fadeIn(150);
+    } else {
+      window.location.href = window.location.origin + "/cart";
+    }
+  });
 
-  function runDynamicInitializers() {
-    // Read the injected country list array from localization parameters
-    const allowedCountries = params.allowed_countries || [];
-    // Fallback logic: If 'in' is not in the allowed list, default to the first allowed country, otherwise default to 'in'
-    const defaultCountry = allowedCountries.includes("in")
-      ? "in"
-      : allowedCountries[0] || "in";
+  // Phone submission handler trigger
+  $(document).on("click", "#kodyt-checkout-btn-auth-continue", function (e) {
+    e.preventDefault();
+    const phoneField = $("#kodyt_auth_phone_active");
+    const rawNumber = phoneField.val().trim();
 
-    const phoneInput = document.querySelector("#kodyt_auth_phone_active");
-    if (phoneInput && !window.kodytItiInstance) {
-      window.kodytItiInstance = window.intlTelInput(phoneInput, {
-        initialCountry: defaultCountry,
-        formatOnDisplay: false,
-        numberDisplayFormat: "E164",
-        separateDialCode: true,
-        onlyCountries: allowedCountries.length ? allowedCountries : undefined,
-        utilsScript:
-          "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
-      });
-      $(phoneInput).closest(".iti").css("width", "100%");
+    if (!rawNumber || rawNumber.length < 10) {
+      return alert("Please enter a valid 10-digit mobile number.");
     }
 
-    const accountPhoneInput = document.querySelector("#kodyt_account_phone");
-    if (accountPhoneInput && !window.kodytAccountItiInstance) {
-      window.kodytAccountItiInstance = window.intlTelInput(accountPhoneInput, {
-        initialCountry: defaultCountry,
-        formatOnDisplay: false,
-        numberDisplayFormat: "E164",
-        separateDialCode: true,
-        onlyCountries: allowedCountries.length ? allowedCountries : undefined,
-        utilsScript:
-          "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
-      });
-      $(accountPhoneInput).closest(".iti").css("width", "100%");
+    const dialCode = window.kodytItiInstance
+      ? window.kodytItiInstance.getSelectedCountryData().dialCode
+      : "91";
+    $("#kodyt-target-otp-display-string").text(`+${dialCode} ${rawNumber}`);
+
+    const currentButton = $(this).prop("disabled", true).text("Sending...");
+
+    $.post(
+      params.ajax_url,
+      {
+        action: "kodyt_proxy_send_otp",
+        security: params.checkout_nonce,
+        phone: rawNumber,
+        country_code: dialCode,
+        otp_context: "checkout",
+      },
+      function (response) {
+        currentButton.prop("disabled", false).text("Continue");
+        if (response && response.success === true) {
+          $(".kodyt-otp-digit-cell").val("");
+          $("#kodyt-modal-overlay-otp").fadeIn(200);
+          $(".kodyt-otp-digit-cell[data-index='1']").focus();
+          startModalCountdownTicker();
+        } else {
+          alert(
+            "Error: " + (response.data?.message || "OTP transmission drop."),
+          );
+        }
+      },
+      "json",
+    );
+  });
+
+  // Modal Digit Grid Autofocus Cascading Chain Rules
+  $(document).on("keyup", ".kodyt-otp-digit-cell", function (e) {
+    const cell = $(this);
+    const value = cell.val();
+    const currentIndex = parseInt(cell.data("index"));
+
+    if (value.length === 1 && currentIndex < 6) {
+      $(
+        ".kodyt-otp-digit-cell[data-index='" + (currentIndex + 1) + "']",
+      ).focus();
     }
 
-    // ◄ NEW: Initialize international dropdown on the Shipping Phone field
-    const shippingPhoneInput = document.querySelector("#kodyt_shipping_phone");
-    if (shippingPhoneInput && !window.kodytShippingItiInstance) {
-      window.kodytShippingItiInstance = window.intlTelInput(
-        shippingPhoneInput,
-        {
-          initialCountry: defaultCountry,
-          formatOnDisplay: false,
-          numberDisplayFormat: "E164",
-          separateDialCode: true,
-          onlyCountries: allowedCountries.length ? allowedCountries : undefined,
-          utilsScript:
-            "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
-        },
+    let fullyCompiledToken = "";
+    $(".kodyt-otp-digit-cell").each(function () {
+      fullyCompiledToken += $(this).val().trim();
+    });
+
+    if (fullyCompiledToken.length === 6) {
+      executeTokenAutoVerification(fullyCompiledToken);
+    }
+  });
+
+  $(document).on("keydown", ".kodyt-otp-digit-cell", function (e) {
+    const cell = $(this);
+    const currentIndex = parseInt(cell.data("index"));
+    if (e.key === "Backspace" && cell.val().length === 0 && currentIndex > 1) {
+      $(".kodyt-otp-digit-cell[data-index='" + (currentIndex - 1) + "']")
+        .focus()
+        .val("");
+    }
+  });
+
+  // Dynamic Token auto verification loops
+  function executeTokenAutoVerification(compiledOtpToken) {
+    const phoneField = $("#kodyt_auth_phone_active");
+    const rawNumber = phoneField.val().trim();
+    const dialCode = window.kodytItiInstance
+      ? window.kodytItiInstance.getSelectedCountryData().dialCode
+      : "91";
+
+    $("#kodyt_otp_code_input").val(compiledOtpToken);
+
+    $.post(
+      params.ajax_url,
+      {
+        action: "kodyt_proxy_verify_otp",
+        security: params.checkout_nonce,
+        phone: rawNumber,
+        country_code: dialCode,
+        otp: compiledOtpToken,
+      },
+      function (response) {
+        if (response && response.success === true) {
+          clearInterval(resendTimerId);
+          $("#kodyt-modal-overlay-otp").fadeOut(200);
+
+          if (response.data && response.data.user_id) {
+            $("#kodyt_in_memory_user_id").val(response.data.user_id);
+          }
+          $("#kodyt_auth_phone").val(rawNumber);
+          $("#kodyt-session-display-phone-string").text(
+            `Logged in using +${dialCode} ${rawNumber}`,
+          );
+
+          $("#kodyt-flow-screen-one-auth").hide();
+          $("#kodyt-flow-screen-two-workspace").show();
+
+          if (
+            response.data &&
+            response.data.addresses &&
+            (response.data.addresses.shipping ||
+              response.data.addresses.billing)
+          ) {
+            buildDynamicAddressesDrawer(
+              response.data.addresses,
+              rawNumber,
+              dialCode,
+            );
+
+            const firstGeneratedCardRow = $(
+              "#kodyt-modal-address-drawer-target-stack .kodyt-drawer-address-row-card",
+            ).first();
+            if (firstGeneratedCardRow.length > 0) {
+              applyCardSelectionToHiddenFormInputs(firstGeneratedCardRow);
+            }
+          } else {
+            // Trigger dedicated Address Creation Drawer immediately if zero profile indices exist
+            $("#kodyt-address-drawer-action-headline-title").text(
+              "Add Shipping Address",
+            );
+            $(".kodyt-drawer-form-fields-wrapper-context")
+              .find(
+                'input[type="text"], input[type="tel"], input[type="email"]',
+              )
+              .val("");
+            $("#kodyt_shipping_phone").val(rawNumber);
+            $("#kodyt-modal-overlay-address-editor-pane").fadeIn(200);
+          }
+        } else {
+          alert("Verification Rejected: Invalid code.");
+          $(".kodyt-otp-digit-cell").val("");
+          $(".kodyt-otp-digit-cell[data-index='1']").focus();
+        }
+      },
+      "json",
+    );
+  }
+
+  function buildDynamicAddressesDrawer(addresses, phoneNum, dialCode) {
+    let html = '<div class="kodyt-addresses-vertical-drawer-stack">';
+
+    // Safely check if the shipping array exists and contains elements
+    if (
+      addresses &&
+      addresses.shipping &&
+      Array.isArray(addresses.shipping) &&
+      addresses.shipping.length > 0
+    ) {
+      addresses.shipping.forEach(function (addr, index) {
+        let isFirst = index === 0;
+        let rowClass = isFirst
+          ? "kodyt-drawer-address-row-card selected-row-default"
+          : "kodyt-drawer-address-row-card";
+        let checkedAttr = isFirst ? "checked" : "";
+
+        // Dynamically assign labels based on array index positioning mapping
+        let badgeLabel = "Home";
+        if (index === 1) {
+          badgeLabel = "Office";
+        } else if (index > 1) {
+          badgeLabel = "Address " + (index + 1);
+        }
+
+        // Fall back gracefully to the verified auth phone number if the specific card key is empty
+        let sphone = addr.phone || phoneNum;
+        if (sphone && !sphone.startsWith("+") && dialCode) {
+          // If dialCode is present but number isn't formatted, clean it up
+          if (!sphone.startsWith(dialCode)) {
+            sphone = "+" + dialCode + sphone;
+          } else if (!sphone.startsWith("+")) {
+            sphone = "+" + sphone;
+          }
+        }
+
+        // Clean out duplicates or null parameters from string lines tracking
+        let addressParts = [
+          addr.address_2,
+          addr.address_1,
+          addr.city,
+          addr.state,
+        ].filter(Boolean);
+
+        let addressString = addressParts.join(", ");
+        if (addr.postcode) {
+          addressString += " - " + addr.postcode;
+        }
+
+        html += `
+          <div class="${rowClass}"
+               data-fname="${addr.first_name || ""}" data-lname="${addr.last_name || ""}"
+               data-email="${addr.email || ""}" data-sphone="${sphone}"
+               data-addr1="${addr.address_1 || ""}" data-addr2="${addr.address_2 || ""}"
+               data-city="${addr.city || ""}" data-state="${addr.state || ""}" data-postcode="${addr.postcode || ""}">
+             <div class="kodyt-row-card-right-details" style="position: relative;">
+                <div class="kodyt-card-name-row">
+                    <strong>${addr.first_name || ""} ${addr.last_name || ""}</strong>
+                    <span class="badge-type-home">${badgeLabel}</span>
+                    <button type="button" class="kodyt-checkout-edit-address-trigger" title="Edit Address" style="position: absolute; right: 0; top: -2px; background: none; border: none; color: #64748b; font-size: 16px; cursor: pointer; font-weight: bold; padding:0;">⋮</button>
+                </div>
+                <p>${addressString}</p>
+                <span class="card-phone-meta">${sphone}</span>
+                <button type="button" class="kodyt-btn-deliver-here-action-trigger" style="margin-top:10px;">Deliver Here</button>
+             </div>
+          </div>`;
+      });
+    } else {
+      // Safe fallback notice if the dataset structure somehow empties unexpectedly
+      html +=
+        '<p style="text-align:center; font-size:13px; color:#64748b; padding:20px;">No saved address profiles found.</p>';
+    }
+
+    html += "</div>";
+
+    // Inject the structured elements straight across both viewport stack wrappers
+    $("#kodyt-modal-address-drawer-target-stack").html(html);
+    $("#kodyt-saved-addresses-target").html(html);
+  }
+
+  function parseAndSyncExistingAddressesToDrawer() {
+    const liveServerRenderedStack = $(
+      "#kodyt-custom-checkout-form #kodyt-saved-addresses-target",
+    ).html();
+    if (liveServerRenderedStack && liveServerRenderedStack.trim() !== "") {
+      $("#kodyt-modal-address-drawer-target-stack").html(
+        liveServerRenderedStack,
       );
-      $(shippingPhoneInput).closest(".iti").css("width", "100%");
-    }
-
-    const billingPhoneInput = document.querySelector("#kodyt_billing_phone");
-    if (billingPhoneInput && !window.kodytBillingItiInstance) {
-      window.kodytBillingItiInstance = window.intlTelInput(billingPhoneInput, {
-        initialCountry: defaultCountry,
-        formatOnDisplay: false,
-        numberDisplayFormat: "E164",
-        separateDialCode: true,
-        onlyCountries: allowedCountries.length ? allowedCountries : undefined,
-        utilsScript:
-          "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
-      });
-      $(billingPhoneInput).closest(".iti").css("width", "100%");
     }
   }
 
-  runDynamicInitializers();
-  // Keep your cascading initializer safety hooks active
-  setTimeout(runDynamicInitializers, 300);
-  setTimeout(runDynamicInitializers, 1200);
+  function updateWorkspaceTopSummaryLabel(fullName, standardLines, rawPhone) {
+    $("#kodyt-summary-hydrate-fullname").text(fullName);
+    $("#kodyt-summary-hydrate-addresslines").text(standardLines);
+    $("#kodyt-summary-hydrate-phonenumber").text(rawPhone);
+  }
+
+  function applyCardSelectionToHiddenFormInputs(cardRowElement) {
+    const d = cardRowElement.data();
+    const nameText = cardRowElement.find("strong").text();
+    const addressText = cardRowElement.find("p").text();
+
+    // Determine the array index position of the specific card being clicked
+    const activeClickedIndex = cardRowElement.index();
+
+    // 1. UPDATE RAD_BUTTON STATES INSIDE THE FLOATING POPUP MODAL COMPONENT DRAWER
+    $("#kodyt-modal-address-drawer-target-stack .kodyt-drawer-address-row-card")
+      .removeClass("selected-row-default")
+      .find('input[type="radio"]')
+      .prop("checked", false);
+
+    const targetModalCardNode = $(
+      "#kodyt-modal-address-drawer-target-stack .kodyt-drawer-address-row-card",
+    ).eq(activeClickedIndex);
+    targetModalCardNode
+      .addClass("selected-row-default")
+      .find('input[type="radio"]')
+      .prop("checked", true);
+
+    // 2. STATE PERSISTENCE FIX: SIMULTANEOUSLY SYNCHRONIZE BACKEND STORAGE DOM TILES
+    $("#kodyt-saved-addresses-target .kodyt-drawer-address-row-card")
+      .removeClass("selected-row-default")
+      .find('input[type="radio"]')
+      .prop("checked", false);
+
+    const targetBackendCacheCardNode = $(
+      "#kodyt-saved-addresses-target .kodyt-drawer-address-row-card",
+    ).eq(activeClickedIndex);
+    targetBackendCacheCardNode
+      .addClass("selected-row-default")
+      .find('input[type="radio"]')
+      .prop("checked", true);
+
+    // 3. Hydrate front-facing active layout workspace titles labels strings
+    updateWorkspaceTopSummaryLabel(nameText, addressText, d.sphone);
+
+    // 4. Push exact value mappings natively into background WooCommerce variables parameters inputs
+    $("#kodyt_shipping_first_name").val(d.fname || "");
+    $("#kodyt_shipping_last_name").val(d.lname || "");
+    $("#kodyt_shipping_email").val(d.email || "");
+    $("#kodyt_shipping_phone").val(d.sphone || "");
+    $("#kodyt_shipping_autocomplete").val(d.addr1 || "");
+    $("#kodyt_shipping_address_2").val(d.addr2 || "");
+    $("#kodyt_shipping_city").val(d.city || "");
+    $("#kodyt_shipping_state").val(d.state || "");
+    $("#kodyt_shipping_postcode").val(d.postcode || "");
+
+    if (d.postcode && d.postcode.toString().trim().length >= 6) {
+      $("#kodyt_shipping_postcode").trigger("change");
+    }
+  }
+
+  // Address drawer interaction event handlers
+  $(document).on(
+    "click",
+    "#kodyt-checkout-trigger-change-address",
+    function (e) {
+      e.preventDefault();
+      parseAndSyncExistingAddressesToDrawer();
+      $("#kodyt-modal-overlay-address-drawer").fadeIn(200);
+    },
+  );
+
+  $(document).on(
+    "click",
+    ".kodyt-btn-deliver-here-action-trigger",
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const rowCard = $(this).closest(".kodyt-drawer-address-row-card");
+      applyCardSelectionToHiddenFormInputs(rowCard);
+      $("#kodyt-modal-overlay-address-drawer").fadeOut(200);
+    },
+  );
+
+  // Open creation drawer sheet model
+  $(document).on(
+    "click",
+    "#kodyt-checkout-btn-new-address-toggle",
+    function (e) {
+      e.preventDefault();
+      $("#kodyt-modal-overlay-address-drawer").fadeOut(150);
+      $("#kodyt-address-drawer-action-headline-title").text(
+        "Add Shipping Address",
+      );
+      $(".kodyt-drawer-form-fields-wrapper-context")
+        .find('input[type="text"], input[type="tel"], input[type="email"]')
+        .val("");
+      $("#kodyt-modal-overlay-address-editor-pane").fadeIn(200);
+    },
+  );
+
+  // Open editing drawer sheet model
+  $(document).on("click", ".kodyt-checkout-edit-address-trigger", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const parentCardRow = $(this).closest(".kodyt-drawer-address-row-card");
+    const d = parentCardRow.data();
+
+    $("#kodyt-modal-overlay-address-drawer").fadeOut(150);
+    $("#kodyt-address-drawer-action-headline-title").text(
+      "Edit Shipping Address",
+    );
+
+    $("#kodyt_shipping_first_name").val(d.fname || "");
+    $("#kodyt_shipping_last_name").val(d.lname || "");
+    $("#kodyt_shipping_email").val(d.email || "");
+    $("#kodyt_shipping_phone").val(d.sphone || "");
+    $("#kodyt_shipping_autocomplete").val(d.addr1 || "");
+    $("#kodyt_shipping_address_2").val(d.addr2 || "");
+    $("#kodyt_shipping_city").val(d.city || "");
+    $("#kodyt_shipping_state").val(d.state || "");
+    $("#kodyt_shipping_postcode").val(d.postcode || "");
+
+    $("#kodyt-modal-overlay-address-editor-pane").fadeIn(200);
+  });
+
+  // Form submit handler inside the editing drawer pane
+  $(document).on(
+    "click",
+    "#kodyt-btn-checkout-save-drawer-address",
+    function (e) {
+      e.preventDefault();
+
+      // Enforce strict required validations checks
+      if (
+        !$("#kodyt_shipping_first_name").val() ||
+        !$("#kodyt_shipping_address_2").val() ||
+        !$("#kodyt_shipping_autocomplete").val()
+      ) {
+        return alert("Please fill out all mandatory marked (*) fields.");
+      }
+
+      const fullName =
+        $("#kodyt_shipping_first_name").val() +
+        " " +
+        $("#kodyt_shipping_last_name").val();
+      const addressString =
+        $("#kodyt_shipping_address_2").val() +
+        ", " +
+        $("#kodyt_shipping_autocomplete").val() +
+        ", " +
+        $("#kodyt_shipping_city").val() +
+        ", " +
+        $("#kodyt_shipping_state").val() +
+        " - " +
+        $("#kodyt_shipping_postcode").val();
+      const phoneString = $("#kodyt_shipping_phone").val();
+
+      // Hydrate structural labels workspace summaries elements blocks instantly
+      updateWorkspaceTopSummaryLabel(fullName, addressString, phoneString);
+
+      $("#kodyt-modal-overlay-address-editor-pane").fadeOut(200);
+    },
+  );
+
+  // Close loops controls
+  $(document).on(
+    "click",
+    ".kodyt-modal-close-trigger-circle, .kodyt-checkout-modal-overlay",
+    function (e) {
+      if (
+        e.target === this ||
+        $(e.target).hasClass("kodyt-modal-close-trigger-circle")
+      ) {
+        $(".kodyt-checkout-modal-overlay").fadeOut(200);
+      }
+    },
+  );
+
+  $(document).on("click", "#kodyt-back-to-input-phone", function (e) {
+    e.preventDefault();
+    $("#kodyt-modal-overlay-otp").fadeOut(200);
+  });
 
   // Profile Screen Verification Injections
   $(document).on("click", "#kodyt-profile-swap-to-input", function (e) {
@@ -101,30 +455,19 @@ jQuery(document).ready(function ($) {
                 </div>
             </div>
         `);
-
-    const liveInput = document.querySelector("#kodyt_profile_phone_active");
-    if (liveInput) {
-      window.kodytProfileItiInstance = window.intlTelInput(liveInput, {
-        initialCountry: "in",
-        separateDialCode: true,
-        utilsScript:
-          "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
-      });
-      $(liveInput).closest(".iti").css("width", "100%");
-      liveInput.focus();
-    }
   });
 
   $(document).on("click", "#kodyt-profile-btn-trigger-action", function (e) {
     e.preventDefault();
     let activeInput = $("#kodyt_profile_phone_active");
-    if (!activeInput.length || !window.kodytProfileItiInstance) return;
+    if (!activeInput.length) return;
 
     let rawNumber = activeInput.val().trim();
     if (!rawNumber) return alert("Please enter a valid mobile number.");
 
-    let dialCode =
-      window.kodytProfileItiInstance.getSelectedCountryData().dialCode || "";
+    let dialCode = window.kodytProfileItiInstance
+      ? window.kodytProfileItiInstance.getSelectedCountryData().dialCode
+      : "91";
     targetPendingNewPhone = rawNumber;
     let btn = $(this).prop("disabled", true).text("Sending...");
 
@@ -169,7 +512,7 @@ jQuery(document).ready(function ($) {
     let btn = $(this).prop("disabled", true).text("Processing...");
     let dialCode = window.kodytProfileItiInstance
       ? window.kodytProfileItiInstance.getSelectedCountryData().dialCode
-      : "";
+      : "91";
 
     $.post(
       params.ajax_url,
@@ -201,7 +544,6 @@ jQuery(document).ready(function ($) {
     );
   });
 
-  // Checkout Step 1 OTP Trigger Handlers
   $(document).on("click", "#kodyt-btn-send-otp", function () {
     let activeInputTarget = $("#kodyt_auth_phone_active");
     let phoneNum = activeInputTarget.length
@@ -212,7 +554,7 @@ jQuery(document).ready(function ($) {
     let btn = $(this).prop("disabled", true).text("Sending...");
     let dialCode = window.kodytItiInstance
       ? window.kodytItiInstance.getSelectedCountryData().dialCode
-      : "";
+      : "91";
 
     $.post(
       params.ajax_url,
@@ -238,121 +580,6 @@ jQuery(document).ready(function ($) {
     );
   });
 
-  $(document).on("click", "#kodyt-btn-verify-otp", function () {
-    let activeInputTarget = $("#kodyt_auth_phone_active");
-    let phoneNum = activeInputTarget.length
-      ? activeInputTarget.val().trim()
-      : $("#kodyt_auth_phone").val().trim();
-    let otpToken = $("#kodyt_otp_code_input").val();
-    if (!otpToken) return alert("Please enter your OTP.");
-
-    let btn = $(this);
-    btn.prop("disabled", true).text("Checking...");
-
-    let dialCode = window.kodytItiInstance
-      ? window.kodytItiInstance.getSelectedCountryData().dialCode
-      : "";
-
-    $.post(
-      params.ajax_url,
-      {
-        action: "kodyt_proxy_verify_otp",
-        security: params.checkout_nonce,
-        phone: phoneNum,
-        country_code: dialCode,
-        otp: otpToken,
-      },
-      function (response) {
-        if (response && response.success === true) {
-          clearInterval(otpTimerInstance);
-
-          if (response.data && response.data.user_id) {
-            $("#kodyt_in_memory_user_id").val(response.data.user_id);
-          }
-
-          $("#kodyt_auth_phone").val(phoneNum);
-
-          let lockedVerifiedHtml = `
-                    <div class="kodyt-verified-phone-container-card">
-                        <div class="kodyt-verified-text-details">
-                            <span class="kodyt-meta-eyebrow">Verified Customer Profile</span>
-                            <span class="kodyt-confirmed-phone-number">+${dialCode} ${phoneNum}</span>
-                        </div>
-                    </div>
-                `;
-          $("#kodyt-checkout-phone-interactive-slot").html(lockedVerifiedHtml);
-
-          if (
-            response.data &&
-            response.data.addresses &&
-            response.data.addresses.shipping
-          ) {
-            let addr = response.data.addresses.shipping;
-
-            let addressHtml = `
-                        <div class="kodyt-saved-addresses-wrapper">
-                            <p class="kodyt-section-label">Use your saved address records:</p>
-                            <div class="kodyt-addresses-grid">
-                                <div class="kodyt-address-card selected"
-                                    data-fname="${addr.first_name || ""}"
-                                    data-lname="${addr.last_name || ""}"
-                                    data-email="${addr.email || ""}"
-                                    data-sphone="${addr.shipping_phone || ""}"
-                                    data-addr1="${addr.address_1 || ""}"
-                                    data-addr2="${addr.address_2 || ""}"
-                                    data-city="${addr.city || ""}"
-                                    data-state="${addr.state || ""}"
-                                    data-postcode="${addr.postcode || ""}">
-                                    <span class="kodyt-address-type">${addr.type || "Default"}</span>
-                                    <strong>${addr.first_name || ""} ${addr.last_name || ""}</strong>
-                                    <p>${addr.address_1 || ""}, ${addr.city || ""}, ${addr.state || ""}</p>
-                                    <span class="kodyt-badge">Selected</span>
-                                </div>
-                            </div>
-                        </div>`;
-            $("#kodyt-saved-addresses-target").html(addressHtml).show();
-            $("#kodyt_shipping_address_2").val(addr.address_2 || "");
-            $("#kodyt_shipping_first_name").val(addr.first_name || "");
-            $("#kodyt_shipping_last_name").val(addr.last_name || "");
-            $("#kodyt_shipping_email").val(addr.email || "");
-            $("#kodyt_shipping_phone").val(addr.shipping_phone || phoneNum);
-            $("#kodyt_shipping_autocomplete").val(addr.address_1 || "");
-            $("#kodyt_shipping_city").val(addr.city || "");
-            $("#kodyt_shipping_state").val(addr.state || "");
-            $("#kodyt_shipping_postcode").val(addr.postcode || "");
-          }
-
-          $("#kodyt_shipping_phone").val(phoneNum);
-
-          $("#kodyt-otp-verify-block").slideUp(400);
-          $("#kodyt-step-auth").removeClass("active").addClass("completed");
-          $("#kodyt-step-shipping").removeClass("locked").addClass("active");
-
-          $("html, body").animate(
-            { scrollTop: $("#kodyt-step-shipping").offset().top - 40 },
-            600,
-          );
-          setTimeout(function () {
-            $("#kodyt_shipping_autocomplete").focus();
-          }, 650);
-          return;
-        }
-
-        let errorMsg =
-          response.data?.message ||
-          response.messages ||
-          "OTP mismatch. Please try again.";
-        alert("Verification rejected: " + errorMsg);
-        btn.prop("disabled", false).text("Verify OTP");
-      },
-      "json",
-    ).fail(function () {
-      alert("Server error verifying token.");
-      btn.prop("disabled", false).text("Verify OTP");
-    });
-  });
-
-  // Standalone Access Account Login Management
   $(document).on("click", "#kodyt-account-btn-verify-otp", function () {
     let phoneNum = $("#kodyt_auth_phone_active").val();
     let code = $("#kodyt_account_otp_input").val();
@@ -383,4 +610,39 @@ jQuery(document).ready(function ($) {
       "json",
     );
   });
+
+  function startModalCountdownTicker() {
+    let secondsLeft = 60;
+    clearInterval(resendTimerId);
+    resendTimerId = setInterval(function () {
+      secondsLeft--;
+      $("#kodyt-modal-otp-countdown-ticker").text(
+        `Resend OTP in 00:${secondsLeft < 10 ? "0" + secondsLeft : secondsLeft}`,
+      );
+      if (secondsLeft <= 0) {
+        clearInterval(resendTimerId);
+        $("#kodyt-modal-otp-countdown-ticker").html(
+          `<span id="kodyt-trigger-resend-ajax" style="color:#4f46e5; cursor:pointer; font-weight:700;">Resend OTP</span>`,
+        );
+      }
+    }, 1000);
+  }
+
+  // Pre-authenticated user loop tracker initialization
+  if ($("#kodyt-flow-screen-two-workspace").is(":visible")) {
+    parseAndSyncExistingAddressesToDrawer();
+
+    const absoluteFirstLoadedRowCard = $(
+      "#kodyt-modal-address-drawer-target-stack .kodyt-drawer-address-row-card",
+    ).first();
+    if (absoluteFirstLoadedRowCard.length > 0) {
+      applyCardSelectionToHiddenFormInputs(absoluteFirstLoadedRowCard);
+    } else {
+      // Automatically open the creation sheet if a logged-in user somehow has no profile histories saved
+      $("#kodyt-address-drawer-action-headline-title").text(
+        "Add Shipping Address",
+      );
+      $("#kodyt-modal-overlay-address-editor-pane").show();
+    }
+  }
 });

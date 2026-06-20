@@ -1,35 +1,162 @@
-.kodyt-summary-card { 
-    background-color: var(--kodyt-summary-bg); 
-    border: var(--kodyt-step-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); 
-    border-radius: var(--kodyt-radius); 
-    padding: var(--kodyt-step-padding); 
-    position: sticky; 
-    top: var(--kodyt-sticky-top); 
-}
-.kodyt-summary-card h4 { margin: 0 0 15px 0; font-size: 16px; font-weight: 700; color: var(--kodyt-text-heading); }
-.kodyt-divider { border: 0; height: 1px; background: var(--kodyt-input-border-color); margin: 15px 0; }
-.kodyt-total-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: var(--kodyt-text-base); }
-.kodyt-total-row.final-total { font-size: 18px; margin-top: 15px; border-top: 1px dashed var(--kodyt-input-border-color); padding-top: 15px; color: var(--kodyt-text-heading); }
-.kodyt-summary-items-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; max-height: 420px; overflow-y: auto; }
-.kodyt-summary-item-row { display: grid !important; grid-template-columns: 64px 1fr auto !important; align-items: center; gap: 16px; width: 100%; }
-.kodyt-summary-item-thumb { position: relative; width: 64px; height: 64px; background: #ffffff; border: 1px solid var(--kodyt-input-border-color); border-radius: var(--kodyt-radius); padding: 4px; }
-.kodyt-summary-item-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--kodyt-radius); }
+/* =========================================================================
+   checkout-STYLE FULL DROPDOWN & ORDER SUMMARY STRUCTURAL FIXES
+   ========================================================================= */
 
-.kodyt-summary-item-qty-badge { 
-    position: absolute; 
-    top: -6px; 
-    right: -6px; 
-    background: var(--kodyt-qty-badge-bg); 
-    color: var(--kodyt-qty-badge-text); 
-    font-size: 10px; 
-    font-weight: 700; 
-    width: 18px; 
-    height: 18px; 
-    border-radius: 50%; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
+/* 1. Navbar Sticky Trigger Layout Fixed Controls */
+.kodyt-checkout-sticky-navbar-strip {
+    width: 100% !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid #edf2f7 !important;
 }
-.kodyt-summary-item-title { font-size: 14px; font-weight: 600; color: var(--kodyt-text-base); }
-.kodyt-coupon-integration-area { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--kodyt-input-border-color); }
-#kodyt-toggle-coupon-field span { font-size: 13px; font-weight: 600; color: var(--kodyt-primary); }
+
+#kodyt-summary-toggle-bar {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 14px 16px !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.kodyt-nav-left-branding {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.kodyt-nav-right-metrics-trigger {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.kodyt-nav-pricing-cluster {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    line-height: 1 !important;
+}
+
+/* 2. Dropdown Line-Items Grid & Content Wrappers Overrides */
+.kodyt-checkout-summary-dropdown-card {
+    background: #ffffff !important;
+    padding: 16px !important;
+    border-top: 1px solid #f1f5f9 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-summary-items-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    margin-bottom: 15px !important;
+    max-height: 260px !important;
+    overflow-y: auto !important;
+    width: 100% !important;
+}
+
+/* Re-write the layout to use a clean flex arrangement to stop item titles from overlapping */
+.kodyt-checkout-canvas-shell .kodyt-summary-item-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-summary-item-thumb {
+    position: relative !important;
+    width: 50px !important;
+    height: 50px !important;
+    background: #ffffff !important;
+    border: 1px solid var(--kodyt-input-border-color) !important;
+    border-radius: var(--kodyt-radius) !important;
+    padding: 2px !important;
+    flex-shrink: 0 !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-summary-item-thumb img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    border-radius: calc(var(--kodyt-radius) - 2px) !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-summary-item-qty-badge {
+    position: absolute !important;
+    top: -6px !important;
+    right: -6px !important;
+    background: var(--kodyt-qty-badge-bg) !important;
+    color: var(--kodyt-qty-badge-text) !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 10 !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-summary-item-details {
+    flex: 1 !important;
+    min-width: 0 !important;
+    text-align: left !important;
+    padding: 0 4px !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-summary-item-title {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--kodyt-text-base) !important;
+    line-height: 1.4 !important;
+    white-space: normal !important; /* Formats long single-line text blocks to wrap to a new line */
+    word-break: break-word !important;
+    display: block !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-summary-item-price-wrap {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: var(--kodyt-text-heading) !important;
+    text-align: right !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+}
+
+/* 3. Invoice Financial Line-Item Rows Breakdowns */
+.kodyt-checkout-canvas-shell .kodyt-totals-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    width: 100% !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-total-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    font-size: 13px !important;
+    color: #4b5563 !important;
+    width: 100% !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-total-row.final-total {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    color: var(--kodyt-text-heading) !important;
+    border-top: 1px dashed var(--kodyt-input-border-color) !important;
+    padding-top: 12px !important;
+    margin-top: 4px !important;
+}
+
+.kodyt-savings-pill-green {
+    background-color: greenyellow;
+    padding: 5px;
+    border-radius: var(--kodyt-radius) !important;
+}

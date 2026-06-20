@@ -1,69 +1,61 @@
-.kodyt-step { 
-    background: var(--kodyt-step-bg); 
-    border: var(--kodyt-step-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); 
-    border-radius: var(--kodyt-radius); 
-    padding: var(--kodyt-step-padding); 
-    margin-bottom: 16px; 
-}
-.kodyt-step.active { 
-    border-color: var(--kodyt-primary); 
-    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.08); 
-}
-.kodyt-step.locked .kodyt-step-body { display: none; }
-.kodyt-step.locked { opacity: 0.5; pointer-events: none; }
-.kodyt-step.completed { 
-    border-color: var(--kodyt-success); 
-}
-.kodyt-step-header h5 { 
-    margin: 0 0 15px 0; 
-    font-size: 18px; 
-    font-weight: 700; 
-    color: var(--kodyt-text-heading); 
-}
 /* =========================================================================
-   FIX: Prevent intl-tel-input from shrinking the email field
+   KODYT CHECKOUT: FLOW STEP MOLECULES & PAYMENTS GRID OVERRIDES
    ========================================================================= */
 
-/* Ensure the form row handles child elements predictably */
-.kodyt-form-row {
+.kodyt-checkout-canvas-shell .kodyt-form-row {
     display: flex !important;
-    gap: 15px !important;
+    gap: 12px !important;
     align-items: flex-start !important;
     width: 100% !important;
+    margin-bottom: 12px !important;
 }
 
-/* Force BOTH the email input and the telephone wrapper div to take exactly 50% width */
-.kodyt-form-row > input[type="email"],
-.kodyt-form-row > .iti {
+.kodyt-checkout-canvas-shell .kodyt-form-row > input,
+.kodyt-checkout-canvas-shell .kodyt-form-row > .iti {
     flex: 1 1 50% !important;
-    max-width: calc(50% - 7.5px) !important; /* Subtracts half of the 15px gap */
+    max-width: calc(50% - 6px) !important;
     min-width: 0 !important;
 }
 
-.kodyt-form-row > input[type="email"]#kodyt_billing_email,
-.kodyt-form-row:has(#kodyt_billing_phone) > .iti {
-    flex: 1 1 50% !important;
-    max-width: calc(50% - 7.5px) !important;
-    min-width: 0 !important;
+.kodyt-checkout-canvas-shell .kodyt-form-row.full-width-stack > input,
+.kodyt-checkout-canvas-shell .kodyt-form-row.full-width-stack > .iti {
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
 }
 
-/* Ensure the telephone input stretches completely inside its 50% wrapper allocation */
-.kodyt-form-row .iti input[type="tel"] {
-    width: 100% !important;
+/* Payment Methods List Container Card Controls */
+.kodyt-checkout-canvas-shell .kodyt-payment-gateways-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 5px;
 }
-.kodyt-form-row input { flex: 1; }
-.kodyt-input-group { display: flex; gap: 10px; width: 100%; }
-.kodyt-input-group input[type="tel"], .kodyt-input-group input[type="text"] { flex: 1 !important; }
-.kodyt-gateway-row { 
-    display: flex; 
-    align-items: center; 
-    gap: 10px; 
-    padding: 14px 16px; 
-    border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); 
-    border-radius: var(--kodyt-radius); 
-    margin-bottom: 10px; 
-    cursor: pointer; 
-    font-weight: 600; 
-    font-size: 14px; 
-    color: var(--kodyt-text-base);
+
+.kodyt-checkout-canvas-shell .kodyt-gateway-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-direction: row-reverse !important; /* Move checkboxes to the right */
+    padding: 16px 14px !important;
+    background: #ffffff !important;
+    border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color) !important;
+    border-radius: var(--kodyt-radius) !important;
+    margin-bottom: 0 !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: var(--kodyt-text-heading) !important;
+    transition: all 0.15s ease !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-gateway-row:hover {
+    border-color: var(--kodyt-primary) !important;
+    background: #fafafa !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-gateway-row input[type="radio"] {
+    width: 18px !important;
+    height: 18px !important;
+    accent-color: var(--kodyt-primary) !important;
+    margin: 0 !important;
 }

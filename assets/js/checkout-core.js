@@ -1,74 +1,38 @@
 /**
  * Root Controller Orchestrator
  */
-// import './utils/helpers.js';
-// import './modules/auth.js';
-// import './modules/location.js';
-// import './modules/marketing.js';
-
 jQuery(document).ready(function ($) {
   const params = kodyt_checkout_params;
   let pinDelayTimeout = null;
 
-  // Custom pipeline event handler: Hydrates addresses during steps processing
-  $(document).on("kodyt_auth_address_sync", function (e, addr, phoneNum) {
-    $("#kodyt_shipping_first_name").val(addr.first_name || "");
-    $("#kodyt_shipping_last_name").val(addr.last_name || "");
-    $("#kodyt_shipping_email").val(addr.email || "");
-    let targetPhone = addr.shipping_phone || phoneNum;
-    $("#kodyt_shipping_phone").val(targetPhone);
-    if (window.kodytShippingItiInstance) {
-      window.kodytShippingItiInstance.setNumber(targetPhone);
-    }
-    $("#kodyt_shipping_phone").val(addr.shipping_phone || phoneNum);
-    $("#kodyt_shipping_autocomplete").val(addr.address_1 || "");
-    $("#kodyt_shipping_address_2").val(addr.address_2 || "");
-    $("#kodyt_shipping_city").val(addr.city || "");
-    $("#kodyt_shipping_state").val(addr.state || "");
-    $("#kodyt_shipping_postcode").val(addr.postcode || "");
+  // Inline Accordion Slide Toggle Engine mapping rules
+  $(document).on("click", "#kodyt-summary-toggle-bar", function (e) {
+    e.preventDefault();
+    const panel = $("#kodyt-summary-dropdown-panel");
+    const arrow = $(this).find(".kodyt-summary-arrow");
+
+    panel.stop(true, true).slideToggle(200, function () {
+      if (panel.is(":visible")) {
+        arrow.text("▲");
+      } else {
+        arrow.text("▼");
+      }
+    });
   });
 
-  $(document).on("change", "#kodyt_different_billing", function () {
-    let block = $("#kodyt-billing-address-block");
-    if ($(this).is(":checked")) {
-      block.slideDown().find("input").prop("required", true);
-    } else {
-      block.slideUp().find("input").prop("required", false);
-    }
-  });
-
-  $(document).on("click", ".kodyt-address-card", function () {
-    $(".kodyt-address-card").removeClass("selected");
-    $(".kodyt-address-card").find(".kodyt-badge").remove();
-    $(this).addClass("selected");
-
-    let d = $(this).data();
-    $(this).append('<span class="kodyt-badge">Selected</span>');
-    $("#kodyt_shipping_first_name").val(d.fname);
-    $("#kodyt_shipping_last_name").val(d.lname);
-    $("#kodyt_shipping_email").val(d.email);
-
-    let rawPhone = d.sphone.toString().trim();
-
-    // Safety Check: Format with leading '+' for proper intl-tel-input card parsing
-    // if (rawPhone && !rawPhone.startsWith('+')) {
-    //     rawPhone = '+' + rawPhone.replace(/^0+/, '');
-    // }
-
-    if (window.kodytShippingItiInstance && rawPhone) {
-      window.kodytShippingItiInstance.setNumber(rawPhone); // Automatically updates both flag dropdown and field text
-    } else {
-      $("#kodyt_shipping_phone").val(rawPhone);
-    }
-
-    $("#kodyt_shipping_address_2").val(d.addr2);
-    $("#kodyt_shipping_autocomplete").val(d.addr1);
-    $("#kodyt_shipping_city").val(d.city);
-    $("#kodyt_shipping_state").val(d.state);
-    $("#kodyt_shipping_postcode").val(d.postcode);
-
-    if (d.postcode && d.postcode.toString().trim().length >= 6) {
-      $("#kodyt_shipping_postcode").trigger("change");
+  // Synchronize applied coupon values
+  $(document).ajaxSuccess(function (event, xhr, settings) {
+    if (
+      settings.data &&
+      (settings.data.indexOf("action=kodyt_apply_checkout_coupon") !== -1 ||
+        settings.data.indexOf("action=kodyt_remove_checkout_coupon") !== -1)
+    ) {
+      if (xhr.responseJSON && xhr.responseJSON.success) {
+        const updatedTotal = xhr.responseJSON.data.grandtotal;
+        if (updatedTotal) {
+          $("#kodyt-toggle-bar-grandtotal").html(updatedTotal);
+        }
+      }
     }
   });
 
@@ -77,19 +41,14 @@ jQuery(document).ready(function ($) {
   ========================================================== */
   function updatePincodeStatusMessage(fieldElement, status, textMessage) {
     if (!fieldElement || fieldElement.length === 0) return;
-
     const feedbackClass = "kodyt-pin-msg-" + fieldElement.attr("id");
-    $("." + feedbackClass).remove(); // Clear historical status lines
+    $("." + feedbackClass).remove();
 
     let styles =
       "font-size: 13px; margin-top: 5px; display: block; font-weight: 500; transition: all 0.2s ease;";
-    if (status === "success") {
-      styles += " color: #16a34a;"; // Emerald Green
-    } else if (status === "error") {
-      styles += " color: #dc2626;"; // Crimson Red
-    } else {
-      styles += " color: #6b7280;"; // Slate Grey
-    }
+    if (status === "success") styles += " color: #00b074;";
+    else if (status === "error") styles += " color: #dc2626;";
+    else styles += " color: #6b7280;";
 
     fieldElement.after(
       '<span class="' +
@@ -110,7 +69,6 @@ jQuery(document).ready(function ($) {
       $(".kodyt-pin-msg-" + currentField.attr("id")).remove();
       return;
     }
-
     if (pincodeValue.length < 6) {
       updatePincodeStatusMessage(
         currentField,
@@ -123,8 +81,6 @@ jQuery(document).ready(function ($) {
     clearTimeout(pinDelayTimeout);
     pinDelayTimeout = setTimeout(function () {
       updatePincodeStatusMessage(currentField, "pending", "🔍 Checking...");
-
-      // Redirect request to your local WordPress server action block
       $.post(
         params.ajax_url,
         {
@@ -150,55 +106,43 @@ jQuery(document).ready(function ($) {
           }
         },
         "json",
-      ).fail(function () {
-        // Fail-safe silent clearing on connection drops
-        $(".kodyt-pin-msg-" + currentField.attr("id")).remove();
-      });
+      );
     }, 500);
   });
 
-  $("#kodyt-btn-shipping-mock").on("click", function () {
-    if (
-      !$("#kodyt_shipping_address_2").val() ||
-      !$("#kodyt_shipping_autocomplete").val()
-    ) {
-      return alert(
-        "Shipping House number and Address details are mandatory fields.",
-      );
-    }
-    $("#kodyt-step-shipping").removeClass("active").addClass("completed");
-    $("#kodyt-step-payment").removeClass("locked").addClass("active");
-  });
-
-  // Form submission processing
+  // Form final submit checkout loop orchestrator
   $("#kodyt-custom-checkout-form").on("submit", function (e) {
     e.preventDefault();
     let submitBtn = $("#kodyt-btn-place-order")
       .text("Processing Order...")
       .prop("disabled", true);
 
-    // Extract dial codes from both intl-tel instances
     let authDialCode = window.kodytItiInstance
       ? window.kodytItiInstance.getSelectedCountryData().dialCode
-      : "";
+      : "91";
     let shippingDialCode = window.kodytShippingItiInstance
       ? window.kodytShippingItiInstance.getSelectedCountryData().dialCode
-      : "";
-    let billingDialCode = window.kodytBillingItiInstance
-      ? window.kodytBillingItiInstance.getSelectedCountryData().dialCode
-      : "";
+      : authDialCode;
+
+    let verifiedAuthMobile = $("#kodyt_auth_phone").val() || "";
+    let shippingMobileValue = $("#kodyt_shipping_phone").val()
+      ? $("#kodyt_shipping_phone").val().trim()
+      : verifiedAuthMobile;
 
     let searchParams = new URLSearchParams($(this).serialize());
-    searchParams.set("kodyt_auth_phone", $("#kodyt_auth_phone").val());
-    searchParams.set("kodyt_shipping_phone", $("#kodyt_shipping_phone").val());
-    searchParams.set("kodyt_billing_phone", $("#kodyt_billing_phone").val());
+
+    // STRIPPED DOWN BILLING SPLIT CHECKBOX FOR TRUE PARITY SESSIONS
+    searchParams.set("kodyt_auth_phone", verifiedAuthMobile);
+    searchParams.set("kodyt_shipping_phone", shippingMobileValue);
+    searchParams.set("kodyt_billing_phone", shippingMobileValue); // Always force identity matching matches
     searchParams.set(
       "kodyt_in_memory_user_id",
       $("#kodyt_in_memory_user_id").val(),
     );
+
     searchParams.set("kodyt_country_dial_code", authDialCode);
     searchParams.set("kodyt_shipping_country_dial_code", shippingDialCode);
-    searchParams.set("kodyt_billing_country_dial_code", billingDialCode);
+    searchParams.set("kodyt_billing_country_dial_code", shippingDialCode);
 
     $.post(
       params.ajax_url,

@@ -84,22 +84,9 @@ class Kodyt_Auth_Handler
       $body['addresses'] = array();
 
       if ($user_id > 0) {
-        $shipping_address = get_user_meta($user_id, 'shipping_address_1', true);
-        if (! empty($shipping_address)) {
-          $body['addresses']['shipping'] = array(
-            'type'           => 'Saved Address',
-            'first_name'     => get_user_meta($user_id, 'shipping_first_name', true),
-            'last_name'      => get_user_meta($user_id, 'shipping_last_name', true),
-            'email'          => get_user_meta($user_id, 'billing_email', true),
-            'shipping_phone' => get_user_meta($user_id, 'shipping_phone', true) ?: $phone,
-            'address_1'      => $shipping_address,
-            'address_2'   => get_user_meta($user_id, 'shipping_address_2', true),
-            'city'           => get_user_meta($user_id, 'shipping_city', true),
-            'state'           => get_user_meta($user_id, 'shipping_state', true),
-            'postcode'       => get_user_meta($user_id, 'shipping_postcode', true),
-          );
-        }
+        $body['addresses'] = Kodyt_User_Bridge::get_native_woocommerce_addresses($user_id);
       }
+
       wp_send_json_success($body);
     }
     wp_send_json_error(array('message' => 'Token rejected.'));

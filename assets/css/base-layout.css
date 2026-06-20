@@ -1,5 +1,8 @@
 @import url('https://googleapis.com');
 
+/* =========================================================================
+   1. CORE FALLBACK INITIALIZER (RETAINED ADMINISTRATIVE DESIGN VARIABLES)
+   ========================================================================= */
 .kodyt-checkout-container {
     font-family: var(--kodyt-font), system-ui, -apple-system, sans-serif;
     color: var(--kodyt-text-base);
@@ -15,42 +18,209 @@
 .kodyt-checkout-container input[type="text"],
 .kodyt-checkout-container input[type="tel"],
 .kodyt-checkout-container input[type="email"] {
-    width: 100%; 
-    padding: 12px 16px; 
-    border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); 
+    width: 100%;
+    padding: 12px 16px;
+    border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color);
     border-radius: var(--kodyt-radius);
-    font-size: 14px; 
-    box-sizing: border-box; 
-    transition: border 0.2s ease; 
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border 0.2s ease;
     height: 46px;
     background-color: #ffffff;
     color: var(--kodyt-text-base);
 }
 .kodyt-checkout-container input:focus {
-    outline: none; 
-    border-color: var(--kodyt-primary); 
+    outline: none;
+    border-color: var(--kodyt-primary);
 }
 .kodyt-checkout-container button {
-    background-color: var(--kodyt-primary); 
-    color: var(--kodyt-primary-text); 
-    padding: 12px 20px; 
+    background-color: var(--kodyt-primary);
+    color: var(--kodyt-primary-text);
+    padding: 12px 20px;
     border-radius: var(--kodyt-radius);
-    border: none; 
-    font-weight: 600; 
-    cursor: pointer; 
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 14px; 
-    height: 46px; 
-    display: inline-flex; 
-    align-items: center; 
+    font-size: 14px;
+    height: 46px;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
 }
 .kodyt-checkout-container button:hover { 
-    background-color: var(--kodyt-primary-hover); 
+    background-color: var(--kodyt-primary-hover);
 }
 .kodyt-grid { 
-    display: grid; 
-    grid-template-columns: 7fr 5fr; 
-    gap: var(--kodyt-grid-gap); 
-    align-items: start; 
+    display: grid;
+    grid-template-columns: 7fr 5fr;
+    gap: var(--kodyt-grid-gap);
+    align-items: start;
+}
+
+/* =========================================================================
+   2. checkout FRAME REPLICATION ADDITIONS (ADAPTED TO USE YOUR VARIABLES)
+   ========================================================================= */
+.kodyt-checkout-container.kodyt-checkout-canvas-shell {
+    max-width: 460px !important;
+    margin: 20px auto;
+    background-color: #f7fafc !important; /* Premium light grayscale background matching screenshots */
+    border: var(--kodyt-step-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color);
+    border-radius: var(--kodyt-radius) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+    padding: 0 0 30px 0 !important;
+    overflow: hidden;
+}
+
+/* Erase default desktop multi-column setup grid to enforce app mode */
+.kodyt-checkout-canvas-shell .kodyt-grid {
+    display: block !important;
+    width: 100% !important;
+}
+
+/* Overriding input style properties inside the headless canvas */
+.kodyt-checkout-canvas-shell input[type="text"],
+.kodyt-checkout-canvas-shell input[type="tel"],
+.kodyt-checkout-canvas-shell input[type="email"] {
+    width: 100% !important;
+    height: 48px !important;
+    padding: 12px 14px;
+    background: #ffffff !important;
+    border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color) !important;
+    border-radius: var(--kodyt-radius) !important;
+    font-size: 14px !important;
+    color: var(--kodyt-text-base) !important;
+}
+
+.kodyt-checkout-canvas-shell input:focus {
+    border-color: var(--kodyt-primary) !important;
+    background: #fbfbfe !important;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.06) !important;
+}
+
+/* Dynamic Primary Progression Controls referencing your Admin Settings Panel values */
+.kodyt-checkout-canvas-shell .kodyt-checkout-primary-cta-button,
+.kodyt-checkout-canvas-shell button[type="submit"]#kodyt-btn-place-order {
+    width: 100% !important;
+    height: 50px !important;
+    background: var(--kodyt-primary) !important;
+    color: var(--kodyt-primary-text) !important;
+    border: none !important;
+    border-radius: var(--kodyt-radius) !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.2px !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.12) !important;
+    transition: all 0.2s ease !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-checkout-primary-cta-button:hover,
+.kodyt-checkout-canvas-shell button[type="submit"]#kodyt-btn-place-order:hover {
+    background: var(--kodyt-primary-hover) !important;
+}
+
+.kodyt-checkout-canvas-shell .kodyt-checkout-secondary-mini-action-button {
+    background: var(--kodyt-step-bg) !important;
+    border: 1px solid var(--kodyt-input-border-color) !important;
+    color: var(--kodyt-text-heading) !important;
+    padding: 0 12px !important;
+    height: 32px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    border-radius: calc(var(--kodyt-radius) - 2px) !important;
+    cursor: pointer !important;
+}
+
+.kodyt-checkout-footer-compliance-wrapper { padding: 24px 14px; text-align: center; }
+.kodyt-footer-powered-by-row { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 10px; color: #94a3b8; text-transform: uppercase; }
+.kodyt-footer-brand-text { color: var(--kodyt-text-heading); font-weight: 800; font-size: 12px; }
+.kodyt-footer-badge-compliance-row-flex { display: flex; justify-content: center; gap: 6px; margin: 12px 0; }
+.kodyt-compliance-badge-item { font-size: 10px; color: #64748b; font-weight: 600; background: #edf2f7; padding: 2px 6px; border-radius: 4px; }
+.kodyt-footer-legal-disclosure-notice { font-size: 11px; color: #94a3b8; line-height: 1.4; margin: 0; }
+.kodyt-footer-legal-disclosure-notice a { color: var(--kodyt-text-base); text-decoration: underline; }
+
+/* =========================================================================
+   KODYT_CHECKOUT-STYLE AUTOCOMPLETE SUGGESTIONS DROPDOWN PANEL OVERRIDES
+   ========================================================================= */
+
+/* 1. Anchoring Container Parent Framework Context Rules */
+.kodyt-checkout-modal-overlay .kodyt-autocomplete-wrapper {
+    position: relative !important;
+    width: 100% !important;
+    display: block !important;
+    margin-bottom: 4px !important;
+}
+
+/* 2. Primary Suggestions Outer Dropdown Card Panel Box */
+.kodyt-checkout-modal-overlay .kodyt-suggestions-box {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1) !important;
+    z-index: 999999999 !important; /* Forces the box to stack cleanly on top of all modal sheets */
+    max-height: 220px !important;
+    overflow-y: auto !important;
+    margin-top: 4px !important;
+    padding: 6px 0 !important;
+    box-sizing: border-box !important;
+    list-style: none !important;
+}
+
+/* Clear default scrollbar behaviors for a cleaner look on touch devices */
+.kodyt-checkout-modal-overlay .kodyt-suggestions-box::-webkit-scrollbar {
+    width: 6px !important;
+}
+.kodyt-checkout-modal-overlay .kodyt-suggestions-box::-webkit-scrollbar-track {
+    background: #f1f5f9 !important;
+    border-radius: 10px !important;
+}
+.kodyt-checkout-modal-overlay .kodyt-suggestions-box::-webkit-scrollbar-thumb {
+    background: #cbd5e1 !important;
+    border-radius: 10px !important;
+}
+
+/* 3. Dropdown Individual Selection Row Component Items Style */
+.kodyt-checkout-modal-overlay .kodyt-suggestion-item {
+    padding: 12px 16px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #334155 !important;
+    cursor: pointer !important;
+    text-align: left !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    transition: all 0.15s ease !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    line-height: 1.4 !important;
+}
+
+/* Clean border alignment properties on the final row item */
+.kodyt-checkout-modal-overlay .kodyt-suggestion-item:last-child {
+    border-bottom: none !important;
+}
+
+/* Active Highlight and Selection States */
+.kodyt-checkout-modal-overlay .kodyt-suggestion-item:hover,
+.kodyt-checkout-modal-overlay .kodyt-suggestion-item.active-selection-focus {
+    background-color: #f8fafc !important;
+    color: var(--kodyt-primary) !important; /* Extracted from your theme engine primary parameters variables */
+}
+
+/* 4. High-Trust Marker Custom Icon Graphic Pre-pend */
+.kodyt-checkout-modal-overlay .kodyt-suggestion-item::before {
+    content: "📍" !important;
+    font-size: 14px !important;
+    flex-shrink: 0 !important;
+    filter: grayscale(20%);
 }
