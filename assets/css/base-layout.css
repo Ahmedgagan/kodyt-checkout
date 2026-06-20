@@ -224,3 +224,36 @@
     flex-shrink: 0 !important;
     filter: grayscale(20%);
 }
+
+/* =========================================================================
+   RESPONSIVE LAYOUT RESPONDERS FOR THE GLOBAL CHECKOUT VIEWPORT OVERLAY
+   ========================================================================= */
+
+/* Desktop layout centering rule structures */
+@media (min-width: 769px) {
+    .kodyt-popup-sliding-panel-content {
+        bottom: 50% !important;
+        transform: translate(-50%, 50%) !important;
+        height: 85vh !important;
+        border-radius: 20px !important;
+        max-width: 440px !important;
+    }
+    .kodyt-popup-drag-dismiss-handle {
+        display: none !important; /* Hide visual dragging elements on tracking desktops screens */
+    }
+}
+
+/* Mobile responsive full slide-up drawer profiles constraints */
+@media (max-width: 768px) {
+    .kodyt-popup-sliding-panel-content {
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        transform: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 92vh !important;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+    }
+}

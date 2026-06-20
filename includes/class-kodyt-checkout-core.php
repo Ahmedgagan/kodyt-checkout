@@ -17,6 +17,75 @@ class Kodyt_Checkout_Core
     add_action('wp_ajax_nopriv_kodyt_validate_pincode', array($this, 'ajax_backend_pincode_verification'));
     add_action('init', array($this, 'register_pending_confirmation_order_status'));
     add_filter('wc_order_statuses', array($this, 'add_pending_confirmation_to_order_statuses'));
+
+    // Hook into the global WordPress footer to render the canvas on all user-facing screens
+    add_action('wp_footer', array($this, 'render_global_checkout_popup_markup'));
+    add_filter('woocommerce_add_to_cart_fragments', array($this, 'synchronize_popup_checkout_fragments'));
+    // Intercept page loading requests right before template headers are sent to the browser
+    add_action('template_redirect', array($this, 'redirect_native_checkout_to_popup_flow'));
+  }
+
+  public function redirect_native_checkout_to_popup_flow()
+  {
+    // 1. Safeguard: Never run redirects inside WP-Admin interfaces or during background core AJAX processing loops
+    if (is_admin() || (defined('DOING_AJAX') && DOING_AJAX)) {
+      return;
+    }
+
+    // 2. Detect if the visitor is trying to load the core native WooCommerce Checkout page route explicitly
+    if (is_checkout() && !is_order_received_page() && !isset($_GET['wc-ajax'])) {
+
+      // Safeguard: If the cart is empty, let standard WooCommerce redirect logic handle them (usually back to cart page)
+      if (function_exists('WC') && WC()->cart && WC()->cart->is_empty()) {
+        return;
+      }
+
+      // 3. Define the destination URL wrapper where you want the popup checkout to draw (e.g., Shop page or Home page)
+      $target_destination_url = function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : home_url('/');
+
+      // 4. Append our premium auto-open parameter tracking token cleanly to the string
+      $redirect_url_with_query = add_query_arg('kodyt_switch', '1', $target_destination_url);
+
+      // 5. Execute an instant, high-trust 302 safe redirect route jump
+      wp_safe_redirect($redirect_url_with_query);
+      exit;
+    }
+  }
+
+  public function synchronize_popup_checkout_fragments($fragments)
+  {
+    ob_start();
+    // Re-render the internal items looping tracking arrays layout panel block explicitly
+?>
+    <div id="kodyt-summary-dropdown-panel">
+    </div>
+  <?php
+    $fragments['#kodyt-summary-dropdown-panel'] = ob_get_clean();
+    return $fragments;
+  }
+
+  public function render_global_checkout_popup_markup()
+  {
+    // Prevent rendering inside admin layout grids or non-checkout flows if preferred
+    if (is_admin()) {
+      return;
+    }
+
+    // Wrap your unified target templates within a globally accessible display-none background layer
+    echo '<div id="kodyt-global-popup-checkout-wrapper" class="kodyt-global-hidden-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999999997; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">';
+    echo '  <div class="kodyt-popup-modal-dismiss-backdrop-hitbox" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 1;"></div>';
+    echo '  <div class="kodyt-popup-sliding-panel-content" style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #f8fafc; border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -10px 40px rgba(0,0,0,0.15); z-index: 2; height: 90vh; overflow: hidden; display: flex; flex-direction: column;">';
+
+    // Top dismiss pill button control matching app patterns
+    echo '     <div class="kodyt-popup-drag-dismiss-handle" style="width: 40px; height: 5px; background: #cbd5e1; border-radius: 10px; margin: 12px auto 6px auto; cursor: pointer; flex-shrink: 0;"></div>';
+    echo '     <div class="kodyt-popup-scrollable-body-viewport" style="flex: 1; overflow-y: auto; padding-bottom: 30px;">';
+
+    // Load your updated layout engine partial safely
+    include KODYT_CHECKOUT_PATH . 'templates/checkout-view.php';
+
+    echo '     </div>';
+    echo '  </div>';
+    echo '</div>';
   }
 
   /**
@@ -123,7 +192,7 @@ class Kodyt_Checkout_Core
     $qty_txt       = get_option('kodyt_checkout_qty_badge_text') ?: '#ffffff';
     $sticky_top    = get_option('kodyt_checkout_sticky_top_offset') ?: '20px';
 
-?>
+  ?>
     <style id="kodyt-checkout-design-tokens">
       :root {
         --kodyt-font: <?php echo wp_kses_post($font); ?>;
@@ -167,7 +236,9 @@ class Kodyt_Checkout_Core
 
   public function process_final_checkout()
   {
-    check_ajax_referer('kodyt_checkout_nonce', 'security');
+    if (!isset($_POST['security']) || !wp_verify_nonce($_POST['security'], 'kodyt_checkout_nonce')) {
+      wp_send_json_error(array('message' => 'Security token expired.'));
+    }
     if (! function_exists('WC') || WC()->cart->is_empty()) {
       wp_send_json_error(array('message' => 'Your cart is empty.'));
     }
@@ -290,126 +361,131 @@ class Kodyt_Checkout_Core
 
   public function enqueue_checkout_assets()
   {
-    global $post;
-
-    // Isolate asset distribution strictly to checkout interfaces and user dashboards
-    $is_checkout_shortcode = (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'kodyt_checkout'));
-    $is_my_account_screen  = (function_exists('is_account_page') && is_account_page());
-
-    if ($is_checkout_shortcode || $is_my_account_screen) {
-
-      $chosen_font = get_option('kodyt_checkout_font_family', 'Inter');
-
-      // Format the name for the API URL
-      $formatted_font = str_replace(' ', '+', $chosen_font);
-
-      // Enqueue it safely using the WordPress system
-      wp_enqueue_style(
-        'user-chosen-font',
-        "https://fonts.googleapis.com/css2?family={$formatted_font}:wght@400;700&display=swap",
-        array(),
-        null // Setting version to null stops WP from breaking the query string
-      );
-
-      // =====================================================================
-      // 1. THIRD-PARTY DEPENDENCY VECTORS
-      // =====================================================================
-      wp_enqueue_style(
-        'intl-tel-input-css',
-        'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.min.css',
-        array(),
-        '18.2.1'
-      );
-
-      wp_enqueue_script(
-        'intl-tel-input',
-        'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js',
-        array(),
-        '18.2.1',
-        true
-      );
-
-      // =====================================================================
-      // 2. MODULAR CSS STYLE HOOKS (Sequenced Dependency Chain)
-      // =====================================================================
-      wp_enqueue_style('kodyt-css-base', KODYT_CHECKOUT_URL . 'assets/css/base-layout.css', array(), '1.3.0');
-      wp_enqueue_style('kodyt-css-steps', KODYT_CHECKOUT_URL . 'assets/css/modules/steps.css', array('kodyt-css-base'), '1.3.0');
-      wp_enqueue_style('kodyt-css-summary', KODYT_CHECKOUT_URL . 'assets/css/modules/cart-summary.css', array('kodyt-css-base'), '1.3.0');
-      wp_enqueue_style('kodyt-css-components', KODYT_CHECKOUT_URL . 'assets/css/modules/ui-components.css', array('kodyt-css-base', 'intl-tel-input-css'), '1.3.0');
-      wp_enqueue_style('kodyt-css-responsive', KODYT_CHECKOUT_URL . 'assets/css/responsive.css', array('kodyt-css-base'), '1.3.0');
-
-      // =====================================================================
-      // 3. FEATURE-DRIVEN JAVASCRIPT PIPELINE (Safe for any Distributed Site)
-      // =====================================================================
-      // We load them as separate files, explicitly declaring the loading order using WP dependencies.
-      // This makes sure your separate feature files work smoothly without needing ES6 import statements in production.
-      wp_enqueue_script(
-        'kodyt-js-utils',
-        KODYT_CHECKOUT_URL . 'assets/js/utils/helpers.js',
-        array('jquery'),
-        '1.3.0',
-        true
-      );
-
-      wp_enqueue_script(
-        'kodyt-js-marketing',
-        KODYT_CHECKOUT_URL . 'assets/js/modules/marketing.js',
-        array('jquery', 'kodyt-js-utils'),
-        '1.3.0',
-        true
-      );
-
-      wp_enqueue_script(
-        'kodyt-js-location',
-        KODYT_CHECKOUT_URL . 'assets/js/modules/location.js',
-        array('jquery', 'kodyt-js-utils'),
-        '1.3.0',
-        true
-      );
-
-      wp_enqueue_script(
-        'kodyt-js-auth',
-        KODYT_CHECKOUT_URL . 'assets/js/modules/auth.js',
-        array('jquery', 'intl-tel-input', 'kodyt-js-utils'),
-        '1.3.0',
-        true
-      );
-
-      // The core file triggers last, running orchestrations over all loaded modules
-      wp_enqueue_script(
-        'kodyt-js-core',
-        KODYT_CHECKOUT_URL . 'assets/js/checkout-core.js',
-        array('jquery', 'intl-tel-input', 'kodyt-js-utils', 'kodyt-js-auth', 'kodyt-js-location', 'kodyt-js-marketing'),
-        '1.3.0',
-        true
-      );
-
-      // =====================================================================
-      // 4. SECURE DATA LAYER PARAMETER LOCALIZATION
-      // =====================================================================
-      $license = get_option('kodyt_checkout_license_key', '');
-      $domain  = wp_parse_url(home_url(), PHP_URL_HOST);
-
-      // Fetch our custom restriction option from the database
-      $custom_countries_array = get_option('kodyt_checkout_allowed_phone_countries', array());
-
-      // FIX: Ensure it is a valid array and NOT empty before enforcing it
-      if (is_array($custom_countries_array) && ! empty($custom_countries_array)) {
-        $allowed_countries_clean = array_values(array_map('strtolower', $custom_countries_array));
-      } else {
-        // Default fallback layout rule if no choices are checked on your settings tab
-        $allowed_countries_raw = function_exists('WC') ? WC()->countries->get_shipping_countries() : array();
-        $allowed_countries_clean = array_values(array_map('strtolower', array_keys($allowed_countries_raw)));
-      }
-
-      wp_localize_script('kodyt-js-core', 'kodyt_checkout_params', array(
-        'ajax_url'          => admin_url('admin-ajax.php'),
-        'checkout_nonce'    => wp_create_nonce('kodyt_checkout_nonce'),
-        'license_key'       => esc_js($license),
-        'domain'            => esc_js($domain),
-        'allowed_countries' => $allowed_countries_clean // Passed cleanly down to auth.js!
-      ));
+    // Prevent execution inside WP Admin control panels
+    if (is_admin()) {
+      return;
     }
+
+    // =====================================================================
+    // 1. GLOBAL BASE STYLING & TRIGGER LOADER
+    // =====================================================================
+    wp_enqueue_style('kodyt-css-base', KODYT_CHECKOUT_URL . 'assets/css/base-layout.css', array(), '1.3.0');
+
+    wp_enqueue_script(
+      'kodyt-global-popup-trigger',
+      KODYT_CHECKOUT_URL . 'assets/js/global-popup-trigger.js',
+      array('jquery'),
+      '1.3.0',
+      true
+    );
+
+    // =====================================================================
+    // 2. DYNAMIC FONTS EXTRACTION & HYDRATION
+    // =====================================================================
+    $chosen_font = get_option('kodyt_checkout_font_family', 'Inter');
+    $formatted_font = str_replace(' ', '+', $chosen_font);
+
+    wp_enqueue_style(
+      'user-chosen-font',
+      "https://fonts.googleapis.com/css2?family={$formatted_font}:wght@400;700&display=swap",
+      array(),
+      null
+    );
+
+    // =====================================================================
+    // 3. THIRD-PARTY DEPENDENCY VECTORS
+    // =====================================================================
+    wp_enqueue_style(
+      'intl-tel-input-css',
+      'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.min.css',
+      array(),
+      '18.2.1'
+    );
+
+    wp_enqueue_script(
+      'intl-tel-input',
+      'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js',
+      array(),
+      '18.2.1',
+      true
+    );
+
+    // =====================================================================
+    // 4. MODULAR CSS STYLE HOOKS (Site-Wide Delivery)
+    // =====================================================================
+    wp_enqueue_style('kodyt-css-steps', KODYT_CHECKOUT_URL . 'assets/css/modules/steps.css', array('kodyt-css-base'), '1.3.0');
+    wp_enqueue_style('kodyt-css-summary', KODYT_CHECKOUT_URL . 'assets/css/modules/cart-summary.css', array('kodyt-css-base'), '1.3.0');
+    wp_enqueue_style('kodyt-css-components', KODYT_CHECKOUT_URL . 'assets/css/modules/ui-components.css', array('kodyt-css-base', 'intl-tel-input-css'), '1.3.0');
+    wp_enqueue_style('kodyt-css-responsive', KODYT_CHECKOUT_URL . 'assets/css/responsive.css', array('kodyt-css-base'), '1.3.0');
+
+    // =====================================================================
+    // 5. FEATURE-DRIVEN JAVASCRIPT PIPELINE (Site-Wide Delivery)
+    // =====================================================================
+    wp_enqueue_script(
+      'kodyt-js-utils',
+      KODYT_CHECKOUT_URL . 'assets/js/utils/helpers.js',
+      array('jquery'),
+      '1.3.0',
+      true
+    );
+
+    wp_enqueue_script(
+      'kodyt-js-marketing',
+      KODYT_CHECKOUT_URL . 'assets/js/modules/marketing.js',
+      array('jquery', 'kodyt-js-utils'),
+      '1.3.0',
+      true
+    );
+
+    wp_enqueue_script(
+      'kodyt-js-location',
+      KODYT_CHECKOUT_URL . 'assets/js/modules/location.js',
+      array('jquery', 'kodyt-js-utils'),
+      '1.3.0',
+      true
+    );
+
+    wp_enqueue_script(
+      'kodyt-js-auth',
+      KODYT_CHECKOUT_URL . 'assets/js/modules/auth.js',
+      array('jquery', 'intl-tel-input', 'kodyt-js-utils'),
+      '1.3.0',
+      true
+    );
+
+    // The core file triggers last, running orchestrations over all loaded modules
+    wp_enqueue_script(
+      'kodyt-js-core',
+      KODYT_CHECKOUT_URL . 'assets/js/checkout-core.js',
+      array('jquery', 'intl-tel-input', 'kodyt-js-utils', 'kodyt-js-auth', 'kodyt-js-location', 'kodyt-js-marketing'),
+      '1.3.0',
+      true
+    );
+
+    // =====================================================================
+    // 6. SECURE GLOBAL PARAMETER LOCALIZATION
+    // =====================================================================
+    $license = get_option('kodyt_checkout_license_key', '');
+    $domain  = wp_parse_url(home_url(), PHP_URL_HOST);
+
+    $custom_countries_array = get_option('kodyt_checkout_allowed_phone_countries', array());
+
+    if (is_array($custom_countries_array) && ! empty($custom_countries_array)) {
+      $allowed_countries_clean = array_values(array_map('strtolower', $custom_countries_array));
+    } else {
+      $allowed_countries_raw = function_exists('WC') ? WC()->countries->get_shipping_countries() : array();
+      $allowed_countries_clean = array_values(array_map('strtolower', array_keys($allowed_countries_raw)));
+    }
+
+    // CRITICAL UPDATE: We bind the parameters array directly to our global script wrapper token 
+    // to guarantee localized parameters variables exist no matter what page the popup initializes on.
+    wp_localize_script('kodyt-global-popup-trigger', 'kodyt_checkout_params', array(
+      'ajax_url'          => admin_url('admin-ajax.php'),
+      'checkout_nonce'    => wp_create_nonce('kodyt_checkout_nonce'),
+      'license_key'       => esc_js($license),
+      'domain'            => esc_js($domain),
+      'allowed_countries' => $allowed_countries_clean
+    ));
   }
 
   public function render_unified_inline_otp_login()
@@ -422,7 +498,7 @@ class Kodyt_Checkout_Core
 
       <div style="display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; width: 100%;">
         <div style="flex: 1; max-width: 260px;">
-          <input type="tel" inputmode="numeric" id="kodyt_auth_phone_active" class="input-text" style="width: 100%; height: 42px; border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); border-radius: var(--kodyt-radius);" placeholder="Enter new mobile number" />
+          <input type="tel" maxlength="10" inputmode="numeric" id="kodyt_auth_phone_active" class="input-text" style="width: 100%; height: 42px; border: var(--kodyt-input-border-width) var(--kodyt-border-style) var(--kodyt-input-border-color); border-radius: var(--kodyt-radius);" placeholder="Enter new mobile number" />
         </div>
         <div>
           <button type="button" id="kodyt-btn-send-otp" class="button" style="height: 42px; padding: 0 20px; white-space: nowrap; background-color: var(--kodyt-secondary); color: var(--kodyt-secondary-text); border-radius: var(--kodyt-radius); border: none; font-size: 16px; font-weight: 600;">Verify Code</button>

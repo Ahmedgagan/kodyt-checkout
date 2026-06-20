@@ -6,7 +6,7 @@ jQuery(document).ready(function ($) {
   let pinDelayTimeout = null;
 
   // Inline Accordion Slide Toggle Engine mapping rules
-  $(document).on("click", "#kodyt-summary-toggle-bar", function (e) {
+  $(document).on("click", ".kodyt-nav-right-metrics-trigger", function (e) {
     e.preventDefault();
     const panel = $("#kodyt-summary-dropdown-panel");
     const arrow = $(this).find(".kodyt-summary-arrow");

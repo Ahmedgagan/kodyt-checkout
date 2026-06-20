@@ -12,16 +12,19 @@ jQuery(document).ready(function ($) {
       $("#kodyt-flow-screen-two-workspace").hide();
       $("#kodyt-flow-screen-one-auth").fadeIn(150);
     } else {
-      window.location.href = window.location.origin + "/cart";
+      $("#kodyt-global-popup-checkout-wrapper").fadeOut(150);
+      $("body").css("overflow", "auto");
     }
   });
 
   // Phone submission handler trigger
   $(document).on("click", "#kodyt-checkout-btn-auth-continue", function (e) {
     e.preventDefault();
-    const phoneField = $("#kodyt_auth_phone_active");
-    const rawNumber = phoneField.val().trim();
+    const phoneField = $(
+      "#kodyt-checkout-phone-interactive-slot #kodyt_auth_phone_active",
+    );
 
+    const rawNumber = phoneField.val().trim();
     if (!rawNumber || rawNumber.length < 10) {
       return alert("Please enter a valid 10-digit mobile number.");
     }
@@ -93,7 +96,9 @@ jQuery(document).ready(function ($) {
 
   // Dynamic Token auto verification loops
   function executeTokenAutoVerification(compiledOtpToken) {
-    const phoneField = $("#kodyt_auth_phone_active");
+    const phoneField = $(
+      "#kodyt-checkout-phone-interactive-slot #kodyt_auth_phone_active",
+    );
     const rawNumber = phoneField.val().trim();
     const dialCode = window.kodytItiInstance
       ? window.kodytItiInstance.getSelectedCountryData().dialCode
@@ -610,6 +615,125 @@ jQuery(document).ready(function ($) {
       "json",
     );
   });
+
+  // =========================================================================
+  // PHONE SWITCH ENGINE WITH NATURAL COOKIE REFRESH
+  // =========================================================================
+  $(document).on(
+    "click",
+    "#kodyt-checkout-change-number-trigger",
+    function (e) {
+      e.preventDefault();
+
+      const changeBtn = $(this).text("Switching...").prop("disabled", true);
+
+      // 1. Fire the headless logout to drop cookies while cloning the cart into guest space
+      $.post(
+        kodyt_checkout_params.ajax_url,
+        {
+          action: "kodyt_headless_ajax_logout",
+          security: params.checkout_nonce,
+        },
+        function (response) {
+          if (response && response.success) {
+            // 2. Refresh the browser page window instantly with our auto-open parameter tag
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set("kodyt_switch", "1");
+
+            // FIX B: Use replace() instead of href assignment to cleanly clear the window history line
+            window.location.replace(currentUrl.toString());
+          } else {
+            alert(
+              "Could not update session parameters. Please reload manually.",
+            );
+            changeBtn.text("Change number").prop("disabled", false);
+          }
+        },
+        "json",
+      ).fail(function () {
+        alert("Network timeout updating security session.");
+        changeBtn.text("Change number").prop("disabled", false);
+      });
+    },
+  );
+
+  // =========================================================================
+  // INSTANT WORKSPACE RESUMPTION FOR CONNECTED USER ACCOUNTS
+  // =========================================================================
+  $(document).on(
+    "click",
+    "#kodyt-checkout-btn-logged-in-continue",
+    function (e) {
+      e.preventDefault();
+
+      // 1. Instantly hide the Screen 1 connection identity block
+      $("#kodyt-flow-screen-one-auth").hide();
+
+      // 2. Bring Screen 2 workspace fields back into focus smoothly
+      $("#kodyt-flow-screen-two-workspace").fadeIn(200);
+
+      // 3. Re-trigger address calculation rules to ensure fields are populated
+      if (typeof window.initializePopupAddressSelection === "function") {
+        window.initializePopupAddressSelection();
+      }
+
+      // 4. Force synchronization of active components fragments arrays
+      $(document).trigger("wc_fragment_refresh");
+    },
+  );
+
+  // =========================================================================
+  // DYNAMIC ADDRESS STACK COMPONENT PRIMING CONTROLLER
+  // =========================================================================
+  window.initializePopupAddressSelection = function () {
+    // Re-parse saved profile addresses out of the fresh template cache
+    if (typeof parseAndSyncExistingAddressesToDrawer === "function") {
+      parseAndSyncExistingAddressesToDrawer();
+    }
+
+    // Scan for the first saved user card row inside the modal drawer container stack
+    const absoluteFirstLoadedRowCard = $(
+      "#kodyt-modal-address-drawer-target-stack .kodyt-drawer-address-row-card",
+    ).first();
+
+    if (absoluteFirstLoadedRowCard.length > 0) {
+      // Hydrate the values into the underlying form and update the main display strings
+      if (typeof applyCardSelectionToHiddenFormInputs === "function") {
+        applyCardSelectionToHiddenFormInputs(absoluteFirstLoadedRowCard);
+      }
+      $("#kodyt-manual-address-fields-wrapper").hide();
+    } else {
+      // If the logged-in profile has no configured records, open the fields for manual typing
+      if (parseInt($("#kodyt_in_memory_user_id").val() || "0") > 0) {
+        $("#kodyt-manual-address-fields-wrapper").show();
+      }
+    }
+  };
+
+  // =========================================================================
+  // WOOCOMMERCE CORE AJAX EVENTS INTERCEPTOR WRAPPER
+  // =========================================================================
+
+  // Trigger initialization automatically when WooCommerce finishes processing fragments updates
+  $(document).on(
+    "updated_checkout wc_fragments_refreshed wc_fragments_loaded",
+    function () {
+      const currentLoggedInUid = parseInt(
+        $("#kodyt_in_memory_user_id").val() || "0",
+      );
+
+      if (currentLoggedInUid > 0) {
+        window.initializePopupAddressSelection();
+      }
+    },
+  );
+
+  // Keep your fallback setup on standard page loads just in case
+  if (parseInt($("#kodyt_in_memory_user_id").val() || "0") > 0) {
+    setTimeout(function () {
+      window.initializePopupAddressSelection();
+    }, 200);
+  }
 
   function startModalCountdownTicker() {
     let secondsLeft = 60;

@@ -30,7 +30,12 @@
   <input type="hidden" id="kodyt_auth_phone" value="<?php echo esc_attr($pre_filled_phone); ?>" />
 
   <form id="kodyt-custom-checkout-form" method="POST">
-
+    <div class="kodyt-checkout-branding-badge-container" style="width: 100%; text-align: center; margin: 4px 0 4px 0; padding: 0; box-sizing: border-box;">
+      <div class="kodyt-checkout-badge-pill" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #e0e7ff; color: #4338ca; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 20px; box-shadow: 0 2px 4px rgba(67, 56, 202, 0.05); border: 1px solid #c7d2fe;">
+        <span class="kodyt-badge-icon" style="font-size: 12px;">⚡</span>
+        Secured by kodyt checkout
+      </div>
+    </div>
     <div class="kodyt-checkout-sticky-navbar-strip">
       <div id="kodyt-summary-toggle-bar">
         <div class="kodyt-nav-left-branding">
@@ -42,7 +47,7 @@
 
         <div class="kodyt-nav-right-metrics-trigger">
           <div class="kodyt-nav-items-count-text">
-            <?php echo $cart_item_count; ?> items
+            • <?php echo $cart_item_count; ?> items
           </div>
           <div class="kodyt-nav-pricing-cluster">
             <strong id="kodyt-toggle-bar-grandtotal"><?php echo WC()->cart->get_cart_total(); ?></strong>
@@ -96,19 +101,37 @@
     </div>
 
     <div id="kodyt-flow-screen-one-auth" style="<?php echo $is_phone_verified ? 'display: none;' : 'display: block;'; ?>">
-      <div class="kodyt-checkout-white-card kodyt-auth-box-wrapper">
-        <div class="kodyt-auth-box-prompt-header">
-          <div class="kodyt-profile-text-header-block">
-            <strong>Login to continue</strong>
-            <p>Enter mobile number to enable passwordless checkouts</p>
+      <div id="kodyt-dynamic-auth-view-root" style="width:100%;">
+        <?php if (is_user_logged_in()) : ?>
+          <div class="kodyt-checkout-user-identity-badge-wrapper" style="width: 100%; max-width: 420px; margin: 0 auto;">
+            <div class="kodyt-checkout-user-identity-badge" style="font-size: 13px; color: #64748b; font-weight: 500; text-align: center; margin-bottom: 12px; padding: 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; box-sizing: border-box;">
+              👤 Checked in as
+              <span class="kodyt-confirmed-phone-number" style="font-weight: 700; color: #0f172a; margin-right: 4px;">
+                <?php echo esc_html(!empty($country_code) ? "+" . $country_code . " " . $pre_filled_phone : $pre_filled_phone); ?>
+              </span>
+              <button type="button" id="kodyt-checkout-change-number-trigger" style="background: none !important; border: none !important; color: #4f46e5 !important; font-weight: 700; cursor: pointer !important; text-decoration: underline !important; padding: 0 !important; font-size: 13px !important; display: inline-block !important;">Change number</button>
+            </div>
+
+            <button type="button" id="kodyt-checkout-btn-logged-in-continue" class="kodyt-checkout-primary-cta-button" style="width: 100%; background: #0f172a; color: #fff; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15); transition: all 0.2s ease;">
+              Proceed to Delivery Details →
+            </button>
           </div>
-        </div>
+        <?php else: ?>
+          <div class="kodyt-checkout-white-card kodyt-auth-box-wrapper">
+            <div class="kodyt-auth-box-prompt-header">
+              <div class="kodyt-profile-text-header-block">
+                <strong>Login to continue</strong>
+                <p>Enter mobile number to enable passwordless checkouts</p>
+              </div>
+            </div>
 
-        <div id="kodyt-checkout-phone-interactive-slot">
-          <?php include KODYT_CHECKOUT_PATH . 'templates/part-auth-step.php'; ?>
-        </div>
+            <div id="kodyt-checkout-phone-interactive-slot">
+              <?php include KODYT_CHECKOUT_PATH . 'templates/part-auth-step.php'; ?>
+            </div>
 
-        <button type="button" id="kodyt-checkout-btn-auth-continue" class="kodyt-checkout-primary-cta-button" style="margin-top: 20px;">Continue</button>
+            <button type="button" id="kodyt-checkout-btn-auth-continue" class="kodyt-checkout-primary-cta-button" style="margin-top: 20px;">Continue</button>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
 
@@ -126,7 +149,10 @@
       </div>
 
       <div class="kodyt-checkout-white-card" id="kodyt-workspace-address-summary-node">
-        <div class="kodyt-section-label-heading-gray">DELIVERY DETAILS</div>
+        <div class="kodyt-drawer-header-row-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;">
+          <div class="kodyt-section-label-heading-gray" style="margin: 0;">DELIVERY DETAILS</div>
+        </div>
+
         <div class="kodyt-address-summary-display-flex">
           <div class="kodyt-pin-marker-icon">📍</div>
           <div class="kodyt-address-summary-string-lines">

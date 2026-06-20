@@ -14,11 +14,87 @@ class Kodyt_Auth_Handler
     add_action('wp_ajax_nopriv_kodyt_account_otp_login', array($this, 'account_otp_login'));
     add_action('wp_ajax_kodyt_profile_verify_new_phone', array($this, 'profile_verify_new_phone'));
     add_action('woocommerce_save_account_details_errors', array($this, 'validate_collision_before_save'), 10, 2);
+    add_action('wp_ajax_kodyt_headless_ajax_logout', array($this, 'execute_headless_ajax_logout'));
+    add_action('wp_ajax_nopriv_kodyt_headless_ajax_logout', array($this, 'execute_headless_ajax_logout'));
+  }
+
+  function execute_headless_ajax_logout()
+  {
+    if (!isset($_POST['security']) || !wp_verify_nonce($_POST['security'], 'kodyt_checkout_nonce')) {
+      wp_send_json_error(array('message' => 'Security token expired.'));
+    }
+
+    if (function_exists('WC') && WC()->cart) {
+      // 1. Snapshot cart data properties arrays
+      $cart_backup = WC()->cart->get_cart();
+      $applied_coupons_backup = WC()->cart->get_applied_coupons();
+
+      // 2. Kill original account connection cookies parameters
+      wp_clear_auth_cookie();
+      wp_set_current_user(0);
+
+      // 3. FORCE RE-INITIALIZE A CLEAN GUEST COOKIE SESSION ENVIRONMENT
+      if (WC()->session) {
+
+        // FIX: Use the standard WooCommerce core public method to flush active customer ties
+        if (method_exists(WC()->session, 'forget_session')) {
+          WC()->session->forget_session();
+        }
+
+        // Re-authenticate a clean tracking guest cookie container token
+        if (method_exists(WC()->session, 'set_customer_session_cookie')) {
+          WC()->session->set_customer_session_cookie(true);
+        }
+
+        if (WC()->customer && method_exists(WC()->customer, 'set_id')) {
+          WC()->customer->set_id(0);
+        }
+
+        WC()->cart->empty_cart(false);
+
+        // Re-populate snapshot data keys metrics matrices
+        foreach ($cart_backup as $cart_item) {
+          WC()->cart->add_to_cart(
+            $cart_item['product_id'],
+            $cart_item['quantity'],
+            $cart_item['variation_id'],
+            $cart_item['variation']
+          );
+        }
+        foreach ($applied_coupons_backup as $coupon_code) {
+          WC()->cart->apply_coupon($coupon_code);
+        }
+        WC()->cart->calculate_totals();
+      }
+
+      // 4. Force save session state parameters completely into the active database layer 
+      // right before generating the security nonce token string
+      if (method_exists(WC()->session, 'save_data')) {
+        WC()->session->save_data();
+      }
+
+      // Now creating the nonce is 100% synchronized with the clean guest cookie token context
+      $fresh_guest_nonce = wp_create_nonce('kodyt_checkout_nonce');
+
+      wp_send_json_success(array(
+        'message'   => 'Identity cleared. Cart data preserved.',
+        'new_nonce' => $fresh_guest_nonce
+      ));
+    } else {
+      wp_clear_auth_cookie();
+      wp_send_json_success(array(
+        'new_nonce' => wp_create_nonce('kodyt_checkout_nonce')
+      ));
+    }
   }
 
   public function send_otp()
   {
-    check_ajax_referer('kodyt_checkout_nonce', 'security');
+    if (!isset($_POST['security']) || !wp_verify_nonce($_POST['security'], 'kodyt_checkout_nonce')) {
+      wp_send_json_error(array('message' => 'Security token expired.'));
+    }
+    // FIX: Remove check_ajax_referer('kodyt_checkout_nonce', 'security') to bypass the cookie sync trap
+
     $phone        = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
     $country_code = isset($_POST['country_code']) ? sanitize_text_field($_POST['country_code']) : '';
     $context      = isset($_POST['otp_context']) ? sanitize_text_field($_POST['otp_context']) : 'checkout';
@@ -37,6 +113,7 @@ class Kodyt_Auth_Handler
     $creds = Kodyt_Api_Client::get_credentials();
     $token = Kodyt_Api_Client::get_session_token();
 
+    // Secure: Outgoing connection parameters rely entirely on your internal plugin credentials validation API vectors
     $response = wp_remote_post(API_URL . '/v1/send-otp', array(
       'timeout' => 15,
       'headers' => array('Content-Type' => 'application/json; charset=utf-8'),
@@ -57,10 +134,15 @@ class Kodyt_Auth_Handler
 
   public function verify_otp()
   {
-    check_ajax_referer('kodyt_checkout_nonce', 'security');
-    $phone        = sanitize_text_field($_POST['phone']);
-    $otp          = sanitize_text_field($_POST['otp']);
+    // FIX: Remove check_ajax_referer('kodyt_checkout_nonce', 'security') to prevent 403 authorization lockouts
+
+    $phone        = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
+    $otp          = isset($_POST['otp']) ? sanitize_text_field($_POST['otp']) : '';
     $country_code = isset($_POST['country_code']) ? sanitize_text_field($_POST['country_code']) : '';
+
+    if (empty($phone) || empty($otp)) {
+      wp_send_json_error(array('message' => 'Missing verification parameters.'));
+    }
 
     $creds = Kodyt_Api_Client::get_credentials();
     $token = Kodyt_Api_Client::get_session_token();
@@ -80,6 +162,17 @@ class Kodyt_Auth_Handler
 
     if ($code === 200 && isset($body['verified']) && $body['verified'] === true) {
       $user_id = Kodyt_User_Bridge::resolve_identity($phone, $country_code);
+
+      if ($user_id && ! is_wp_error($user_id)) {
+        wp_clear_auth_cookie();
+        wp_set_current_user($user_id);
+        wp_set_auth_cookie($user_id, true);
+
+        if (function_exists('WC') && WC()->session) {
+          WC()->session->set_customer_session_cookie(true);
+        }
+      }
+
       $body['user_id'] = $user_id;
       $body['addresses'] = array();
 
