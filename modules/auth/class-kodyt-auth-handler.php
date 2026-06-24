@@ -33,6 +33,16 @@ class Kodyt_Auth_Handler
       wp_clear_auth_cookie();
       wp_set_current_user(0);
 
+      if (class_exists('WP_Session_Tokens')) {
+        $manager = WP_Session_Tokens::get_instance(get_current_user_id());
+        $manager->destroy_all(); // Completely invalidates the session hash string calculation matrix
+      }
+
+      // Destroy fallback cookie references from active server environment arrays manually
+      unset($_COOKIE[LOGGED_IN_COOKIE]);
+      unset($_COOKIE[SECURE_AUTH_COOKIE]);
+      unset($_COOKIE[AUTH_COOKIE]);
+
       // 3. FORCE RE-INITIALIZE A CLEAN GUEST COOKIE SESSION ENVIRONMENT
       if (WC()->session) {
 
@@ -73,16 +83,14 @@ class Kodyt_Auth_Handler
         WC()->session->save_data();
       }
 
-      // Now creating the nonce is 100% synchronized with the clean guest cookie token context
-      $fresh_guest_nonce = wp_create_nonce('kodyt_checkout_nonce');
-
       wp_send_json_success(array(
         'message'   => 'Identity cleared. Cart data preserved.',
-        'new_nonce' => $fresh_guest_nonce
+        'new_nonce' => wp_create_nonce('kodyt_checkout_nonce')
       ));
     } else {
       wp_clear_auth_cookie();
       wp_send_json_success(array(
+        'message'   => 'Identity cleared. Cart data not preserved.',
         'new_nonce' => wp_create_nonce('kodyt_checkout_nonce')
       ));
     }
@@ -135,6 +143,9 @@ class Kodyt_Auth_Handler
   public function verify_otp()
   {
     // FIX: Remove check_ajax_referer('kodyt_checkout_nonce', 'security') to prevent 403 authorization lockouts
+    if (!isset($_POST['security']) || !wp_verify_nonce($_POST['security'], 'kodyt_checkout_nonce')) {
+      wp_send_json_error(array('message' => 'Security token expired.'));
+    }
 
     $phone        = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
     $otp          = isset($_POST['otp']) ? sanitize_text_field($_POST['otp']) : '';
@@ -164,17 +175,61 @@ class Kodyt_Auth_Handler
       $user_id = Kodyt_User_Bridge::resolve_identity($phone, $country_code);
 
       if ($user_id && ! is_wp_error($user_id)) {
+        // 1. Clear any prior anonymous tracing states
         wp_clear_auth_cookie();
+
+        // 2. Perform the native core login state changes
         wp_set_current_user($user_id);
         wp_set_auth_cookie($user_id, true);
 
         if (function_exists('WC') && WC()->session) {
           WC()->session->set_customer_session_cookie(true);
         }
+
+        foreach (headers_list() as $header) {
+          // Identify the cookie header matching your site's logged-in identity string
+          if (strpos($header, 'Set-Cookie:') === 0 && strpos($header, LOGGED_IN_COOKIE) !== false) {
+
+            // Extract the cookie value parameter string
+            preg_match('/' . LOGGED_IN_COOKIE . '=([^;]+)/', $header, $matches);
+            if (!empty($matches)) {
+
+              // This is the combined plain-text cookie string containing: username|expiration|token|signature
+              $cookie_val = urldecode($matches[1]);
+
+              // 1. Pop it straight into PHP memory so WordPress core functions can find it
+              $_COOKIE[LOGGED_IN_COOKIE] = $cookie_val;
+
+              // 2. Force the cookie parsing engine to re-run and extract the plain-text token
+              $cookie_elements = wp_parse_auth_cookie($cookie_val, 'logged_in');
+              if (!empty($cookie_elements['token'])) {
+                $plain_text_token = $cookie_elements['token'];
+
+                // Bind the pure, unhashed session token string to the request context
+                add_filter('determine_current_user', function () use ($user_id) {
+                  return $user_id;
+                }, 999);
+                add_filter('secure_logged_in_cookie', function () use ($plain_text_token) {
+                  return $plain_text_token;
+                }, 999);
+                add_filter('attach_session_information', function () use ($plain_text_token) {
+                  return $plain_text_token;
+                }, 999);
+              }
+            }
+          }
+        }
       }
 
       $body['user_id'] = $user_id;
       $body['addresses'] = array();
+
+      // =========================================================================
+      // COMPUTE AUTHENTIC NONCE
+      // Now that the User ID AND Session Token match the outgoing cookie state completely,
+      // this outputs a true, fully-validatable authenticated user nonce.
+      // =========================================================================
+      $body['new_nonce'] = wp_create_nonce('kodyt_checkout_nonce');
 
       if ($user_id > 0) {
         $body['addresses'] = Kodyt_User_Bridge::get_native_woocommerce_addresses($user_id);

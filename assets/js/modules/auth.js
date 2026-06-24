@@ -117,6 +117,11 @@ jQuery(document).ready(function ($) {
       },
       function (response) {
         if (response && response.success === true) {
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set("kodyt_switch", "1");
+          // window.location.replace(currentUrl.toString());
+          params.checkout_nonce = response.data.new_nonce;
+
           clearInterval(resendTimerId);
           $("#kodyt-modal-overlay-otp").fadeOut(200);
 
@@ -627,7 +632,6 @@ jQuery(document).ready(function ($) {
 
       const changeBtn = $(this).text("Switching...").prop("disabled", true);
 
-      // 1. Fire the headless logout to drop cookies while cloning the cart into guest space
       $.post(
         kodyt_checkout_params.ajax_url,
         {
@@ -636,13 +640,52 @@ jQuery(document).ready(function ($) {
         },
         function (response) {
           if (response && response.success) {
-            // 2. Refresh the browser page window instantly with our auto-open parameter tag
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set("kodyt_switch", "1");
+            // 1. Synchronize the fresh guest security token
+            params.checkout_nonce = response.data.new_nonce;
+            if (typeof kodyt_checkout_params !== "undefined") {
+              kodyt_checkout_params.checkout_nonce = response.data.new_nonce;
+            }
 
-            // FIX B: Use replace() instead of href assignment to cleanly clear the window history line
-            window.location.replace(currentUrl.toString());
+            // =========================================================================
+            // JAVASCRIPT TEMPLATE INJECTION: RENDER LOGIN BOX INTO THE DOM
+            // =========================================================================
+            const loginCardHtml = `
+              <div id="kodyt-dynamic-auth-view-root" style="width:100%;">
+                  <div class="kodyt-checkout-white-card kodyt-auth-box-wrapper">
+                    <div class="kodyt-auth-box-prompt-header">
+                      <div class="kodyt-profile-text-header-block">
+                        <strong>Login to continue</strong>
+                        <p>Enter mobile number to enable passwordless checkouts</p>
+                      </div>
+                    </div>
+
+                  <div id="kodyt-checkout-phone-interactive-slot">
+                    <div class="kodyt-input-group">
+                      <input type="tel" inputmode="numeric" id="kodyt_auth_phone_active" maxlength="10" placeholder="Mobile Number" required="">
+                      <!-- <button type="button" id="kodyt-btn-send-otp">Send OTP</button> -->
+                    </div>
+                  </div>
+
+                  <button type="button" id="kodyt-checkout-btn-auth-continue" class="kodyt-checkout-primary-cta-button" style="margin-top: 20px;">Continue</button>
+                </div>
+              </div>
+            `;
+
+            // Target your modal viewport container
+            const modalViewport = $(
+              ".kodyt-checkout-user-identity-badge-wrapper",
+            );
+
+            if (modalViewport.length > 0) {
+              // Wipe Screen 2 workspace and inject our fresh Login Box elements
+              modalViewport.html(loginCardHtml);
+            } else {
+              window.location.reload();
+            }
           } else {
+            if (response.data && response.data.new_nonce) {
+              params.checkout_nonce = response.data.new_nonce;
+            }
             alert(
               "Could not update session parameters. Please reload manually.",
             );

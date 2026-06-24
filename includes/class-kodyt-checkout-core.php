@@ -239,6 +239,7 @@ class Kodyt_Checkout_Core
     if (!isset($_POST['security']) || !wp_verify_nonce($_POST['security'], 'kodyt_checkout_nonce')) {
       wp_send_json_error(array('message' => 'Security token expired.'));
     }
+
     if (! function_exists('WC') || WC()->cart->is_empty()) {
       wp_send_json_error(array('message' => 'Your cart is empty.'));
     }
@@ -306,12 +307,41 @@ class Kodyt_Checkout_Core
       $order->calculate_totals();
       $payment_method = sanitize_text_field($posted_data['kodyt_payment_method']);
       $gateways       = WC()->payment_gateways->get_available_payment_gateways();
+      $order_id = $order->get_id();
 
       if (isset($gateways[$payment_method])) {
         $order->set_payment_method($gateways[$payment_method]);
       }
 
-      $result = $gateways[$payment_method]->process_payment($order->get_id());
+      $_POST['billing_first_name'] = $shipping_args['first_name'];
+      $_POST['billing_last_name']  = $shipping_args['last_name'];
+      $_POST['billing_address_1']  = $shipping_args['address_1'];
+      $_POST['billing_address_2']  = $shipping_args['address_2'];
+      $_POST['billing_city']       = $shipping_args['city'];
+      $_POST['billing_state']      = $shipping_args['state'];
+      $_POST['billing_postcode']   = $shipping_args['postcode'];
+      $_POST['billing_phone']      = $shipping_args['phone'];
+      $_POST['billing_country']    = 'IN';
+      $_POST['billing_email']      = 'customer-' . $shipping_args['phone'] . '@kodyt-checkout.local';
+
+      $_POST['shipping_first_name'] = $shipping_args['first_name'];
+      $_POST['shipping_last_name']  = $shipping_args['last_name'];
+      $_POST['shipping_address_1']  = $shipping_args['address_1'];
+      $_POST['shipping_address_2']  = $shipping_args['address_2'];
+      $_POST['shipping_city']       = $shipping_args['city'];
+      $_POST['shipping_state']      = $shipping_args['state'];
+      $_POST['shipping_postcode']   = $shipping_args['postcode'];
+      $_POST['shipping_phone']      = $shipping_args['phone'];
+      $_POST['shipping_country']    = 'IN';
+
+      $_POST['payment_method']     = $payment_method;
+      $_REQUEST = array_merge($_REQUEST, $_POST);
+
+      $order->save();
+
+      $result = $gateways[$payment_method]->process_payment($order_id);
+
+      $is_cod = ('cod' === $payment_method);
 
       if (isset($result['result']) && $result['result'] === 'success') {
         wp_set_current_user($user_id);
@@ -319,15 +349,18 @@ class Kodyt_Checkout_Core
         if (WC()->session) WC()->session->set_customer_session_cookie(true);
         WC()->cart->empty_cart();
 
-        $order->update_status('pending-confirm', __('Order created via custom checkout, awaiting WhatsApp customer validation.', 'kodyt-checkout'));
-        $order->save();
+        if ($is_cod) {
+          $order->update_status('pending-confirm', __('Order created via custom checkout, awaiting WhatsApp customer validation.', 'kodyt-checkout'));
+          $order->save();
 
-        if (! class_exists('Kodyt_Notification_Handler')) {
-          require_once KODYT_CHECKOUT_PATH . 'modules/notifications/class-kodyt-notification-handler.php';
+          if (! class_exists('Kodyt_Notification_Handler')) {
+            require_once KODYT_CHECKOUT_PATH . 'modules/notifications/class-kodyt-notification-handler.php';
+          }
+
+          // The notification handler now automatically pulls the fully formatted numbers directly out of the order objects!
+          Kodyt_Notification_Handler::trigger_whatsapp_order_notification($order_id, $order);
         }
 
-        // The notification handler now automatically pulls the fully formatted numbers directly out of the order objects!
-        Kodyt_Notification_Handler::trigger_whatsapp_order_notification($order->get_id(), $order);
         wp_send_json(array('result' => 'success', 'redirect' => $result['redirect']));
       } else {
         wp_send_json_error(array('message' => 'Payment routing failed.'));
