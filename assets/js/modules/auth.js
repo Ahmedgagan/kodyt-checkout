@@ -239,7 +239,6 @@ jQuery(document).ready(function ($) {
                     <button type="button" class="kodyt-checkout-edit-address-trigger" title="Edit Address" style="position: absolute; right: 0; top: -2px; background: none; border: none; color: #64748b; font-size: 16px; cursor: pointer; font-weight: bold; padding:0;">⋮</button>
                 </div>
                 <p>${addressString}</p>
-                <span class="card-phone-meta">${sphone}</span>
                 <button type="button" class="kodyt-btn-deliver-here-action-trigger" style="margin-top:10px;">Deliver Here</button>
              </div>
           </div>`;
@@ -271,7 +270,6 @@ jQuery(document).ready(function ($) {
   function updateWorkspaceTopSummaryLabel(fullName, standardLines, rawPhone) {
     $("#kodyt-summary-hydrate-fullname").text(fullName);
     $("#kodyt-summary-hydrate-addresslines").text(standardLines);
-    $("#kodyt-summary-hydrate-phonenumber").text(rawPhone);
   }
 
   function applyCardSelectionToHiddenFormInputs(cardRowElement) {

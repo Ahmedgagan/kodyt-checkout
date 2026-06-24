@@ -158,7 +158,6 @@
           <div class="kodyt-address-summary-string-lines">
             <strong id="kodyt-summary-hydrate-fullname">Add Address</strong>
             <p id="kodyt-summary-hydrate-addresslines">Please configure shipping coordinates below...</p>
-            <span id="kodyt-summary-hydrate-phonenumber"></span>
           </div>
           <button type="button" id="kodyt-checkout-trigger-change-address" class="kodyt-checkout-secondary-mini-action-button">Change</button>
         </div>

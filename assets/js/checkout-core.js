@@ -110,12 +110,66 @@ jQuery(document).ready(function ($) {
     }, 500);
   });
 
-  // Form final submit checkout loop orchestrator
-  $("#kodyt-custom-checkout-form").on("submit", function (e) {
+  // Form final submit checkout handler
+  $("#kodyt-btn-place-order").on("click", function (e) {
     e.preventDefault();
-    let submitBtn = $("#kodyt-btn-place-order")
-      .text("Processing Order...")
-      .prop("disabled", true);
+
+    const formElement = $("#kodyt-custom-checkout-form");
+    let missingFieldsCount = 0;
+    let firstMissingField = null;
+
+    // =========================================================================
+    // 1. SCAN ALL REQUIRED FIELDS (EVEN IF HIDDEN INSIDE THE POPUP DRAWER)
+    // =========================================================================
+    formElement
+      .find("input[required], select[required], textarea[required]")
+      .each(function () {
+        // Skip checking the OTP field if it's already done
+        if ($(this).attr("id") === "kodyt_account_otp_input") {
+          return true; // continue
+        }
+
+        const fieldValue = $(this).val();
+        if (!fieldValue || fieldValue.trim() === "") {
+          missingFieldsCount++;
+          $(this).addClass("kodyt-input-error"); // Add red border class
+
+          if (!firstMissingField) {
+            firstMissingField = $(this); // Cache the first empty input to focus later
+          }
+        } else {
+          $(this).removeClass("kodyt-input-error");
+        }
+      });
+
+    // =========================================================================
+    // 2. IF FIELDS ARE MISSING: FORCE OPEN THE ADDRESS DRAWER/POPUP
+    // =========================================================================
+    if (missingFieldsCount > 0) {
+      // Replace these selectors with the exact IDs/classes used to display your popup
+      // e.g., Open the modal overlay, slide out the drawer wrapper
+      $(".kodyt-popup-overlay").fadeIn(200);
+      $(".kodyt-popup-modal-wrapper").addClass("is-active");
+
+      // Switch the active view window tab inside your popup to show the address layout screen
+      $("#kodyt-flow-screen-one-auth").hide();
+      $("#kodyt-modal-overlay-address-editor-pane").fadeIn(200);
+
+      // Bounce focus straight into the first empty element so they can start typing
+      if (firstMissingField) {
+        firstMissingField.focus();
+      }
+
+      alert(
+        "Your delivery details are incomplete. Please fill out the missing address fields.",
+      );
+      return false; // Stop execution right here
+    }
+
+    // =========================================================================
+    // 3. RUN SYSTEM CORE CHECKOUT DISPATCHER (Only runs if address is complete)
+    // =========================================================================
+    let submitBtn = $(this).text("Processing Order...").prop("disabled", true);
 
     let authDialCode = window.kodytItiInstance
       ? window.kodytItiInstance.getSelectedCountryData().dialCode
@@ -129,12 +183,11 @@ jQuery(document).ready(function ($) {
       ? $("#kodyt_shipping_phone").val().trim()
       : verifiedAuthMobile;
 
-    let searchParams = new URLSearchParams($(this).serialize());
+    let searchParams = new URLSearchParams(formElement.serialize());
 
-    // STRIPPED DOWN BILLING SPLIT CHECKBOX FOR TRUE PARITY SESSIONS
     searchParams.set("kodyt_auth_phone", verifiedAuthMobile);
     searchParams.set("kodyt_shipping_phone", shippingMobileValue);
-    searchParams.set("kodyt_billing_phone", shippingMobileValue); // Always force identity matching matches
+    searchParams.set("kodyt_billing_phone", shippingMobileValue);
     searchParams.set(
       "kodyt_in_memory_user_id",
       $("#kodyt_in_memory_user_id").val(),

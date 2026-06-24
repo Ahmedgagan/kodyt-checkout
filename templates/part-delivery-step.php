@@ -53,7 +53,6 @@ if (!isset($shipping_phone)) {
 
         $full_lines_address = array_filter(array($addr['address_2'], $addr['address_1'], $addr['city'], $addr['state']));
         echo '     <p>' . esc_html(implode(', ', $full_lines_address)) . ' - ' . esc_html($addr['postcode']) . '</p>';
-        echo '     <span class="card-phone-meta">' . esc_html($formatted_phone) . '</span>';
         echo '     <button type="button" class="kodyt-btn-deliver-here-action-trigger" style="margin-top:10px;">Deliver Here</button>';
         echo '  </div>';
         echo '</div>';
