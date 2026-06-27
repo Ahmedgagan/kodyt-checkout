@@ -229,11 +229,11 @@ jQuery(document).ready(function ($) {
         html += `
           <div class="${rowClass}"
                data-fname="${addr.first_name || ""}" data-lname="${addr.last_name || ""}"
-               data-email="${addr.email || ""}" data-sphone="${sphone}"
+               data-email="${addr.email || ""}" data-sphone="${sphone}" data-fname="${addr.address_id || ""}"
                data-addr1="${addr.address_1 || ""}" data-addr2="${addr.address_2 || ""}"
                data-city="${addr.city || ""}" data-state="${addr.state || ""}" data-postcode="${addr.postcode || ""}">
              <div class="kodyt-row-card-right-details" style="position: relative;">
-                <div class="kodyt-card-name-row">
+                <div class="kodyt-card-name-row" style="position: relative; width: 100%;">
                     <strong>${addr.first_name || ""} ${addr.last_name || ""}</strong>
                     <span class="badge-type-home">${badgeLabel}</span>
                     <button type="button" class="kodyt-checkout-edit-address-trigger" title="Edit Address" style="position: absolute; right: 0; top: -2px; background: none; border: none; color: #64748b; font-size: 16px; cursor: pointer; font-weight: bold; padding:0;">⋮</button>
@@ -267,7 +267,7 @@ jQuery(document).ready(function ($) {
     }
   }
 
-  function updateWorkspaceTopSummaryLabel(fullName, standardLines, rawPhone) {
+  function updateWorkspaceTopSummaryLabel(fullName, standardLines) {
     $("#kodyt-summary-hydrate-fullname").text(fullName);
     $("#kodyt-summary-hydrate-addresslines").text(standardLines);
   }
@@ -309,7 +309,7 @@ jQuery(document).ready(function ($) {
       .prop("checked", true);
 
     // 3. Hydrate front-facing active layout workspace titles labels strings
-    updateWorkspaceTopSummaryLabel(nameText, addressText, d.sphone);
+    updateWorkspaceTopSummaryLabel(nameText, addressText);
 
     // 4. Push exact value mappings natively into background WooCommerce variables parameters inputs
     $("#kodyt_shipping_first_name").val(d.fname || "");
@@ -388,16 +388,20 @@ jQuery(document).ready(function ($) {
     $("#kodyt_shipping_city").val(d.city || "");
     $("#kodyt_shipping_state").val(d.state || "");
     $("#kodyt_shipping_postcode").val(d.postcode || "");
-
+    $("#kodyt-btn-checkout-save-drawer-address").data("address-id", d.id || "");
     $("#kodyt-modal-overlay-address-editor-pane").fadeIn(200);
   });
 
+  // Form submit handler inside the editing drawer pane
   // Form submit handler inside the editing drawer pane
   $(document).on(
     "click",
     "#kodyt-btn-checkout-save-drawer-address",
     function (e) {
       e.preventDefault();
+
+      const $btn = $(this); // Cache button reference correctly
+      const addressId = $btn.data("address-id"); // Read correctly from DOM attribute
 
       // Enforce strict required validations checks
       if (
@@ -408,26 +412,139 @@ jQuery(document).ready(function ($) {
         return alert("Please fill out all mandatory marked (*) fields.");
       }
 
-      const fullName =
-        $("#kodyt_shipping_first_name").val() +
-        " " +
-        $("#kodyt_shipping_last_name").val();
-      const addressString =
-        $("#kodyt_shipping_address_2").val() +
-        ", " +
-        $("#kodyt_shipping_autocomplete").val() +
-        ", " +
-        $("#kodyt_shipping_city").val() +
-        ", " +
-        $("#kodyt_shipping_state").val() +
-        " - " +
-        $("#kodyt_shipping_postcode").val();
+      $btn.prop("disabled", true).text("Saving...");
+
+      const firstName = $("#kodyt_shipping_first_name").val();
+      const lastName = $("#kodyt_shipping_last_name").val();
+      const email = $("#kodyt_shipping_email").val() || "";
       const phoneString = $("#kodyt_shipping_phone").val();
+      const address1 = $("#kodyt_shipping_autocomplete").val();
+      const address2 = $("#kodyt_shipping_address_2").val();
+      const city = $("#kodyt_shipping_city").val();
+      const state = $("#kodyt_shipping_state").val();
+      const pincode = $("#kodyt_shipping_postcode").val();
 
-      // Hydrate structural labels workspace summaries elements blocks instantly
-      updateWorkspaceTopSummaryLabel(fullName, addressString, phoneString);
+      const fullName = firstName + " " + lastName;
+      const addressString =
+        address2 +
+        ", " +
+        address1 +
+        ", " +
+        city +
+        ", " +
+        state +
+        " - " +
+        pincode;
 
-      $("#kodyt-modal-overlay-address-editor-pane").fadeOut(200);
+      let action = "kodyt_save_address";
+      if (addressId) {
+        action = "kodyt_update_address";
+      }
+
+      $.post(
+        params.ajax_url,
+        {
+          action: action,
+          security: params.checkout_nonce,
+          address_id: addressId,
+          pincode: pincode,
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          phone: phoneString,
+          address_1: address1,
+          address_2: address2,
+          city: city,
+          state: state,
+        },
+        function (response) {
+          if (response && response.success === true) {
+            // Get server-confirmed ID (fallback to existing if updating)
+            const finalId = response?.new_address_id || addressId;
+
+            const newCardHtml = `
+                  <div class="kodyt-drawer-address-row-card selected-row-default"
+                      data-id="${finalId}"
+                      data-fname="${firstName}"
+                      data-lname="${lastName}"
+                      data-email="${email}"
+                      data-sphone="${phoneString}"
+                      data-addr1="${address1}"
+                      data-addr2="${address2}"
+                      data-city="${city}"
+                      data-state="${state}"
+                      data-postcode="${pincode}">
+                    <div class="kodyt-row-card-right-details">
+                      <div class="kodyt-card-name-row" style="position: relative; width: 100%;">
+                        <strong>${fullName}</strong>
+                        <span class="badge-type-home">Office</span>
+                        <button type="button" class="kodyt-checkout-edit-address-trigger" title="Edit Address" style="position: absolute; right: 0; top: -2px; background: none !important; border: none !important; color: #64748b !important; font-size: 16px !important; cursor: pointer !important; padding: 0 !important; width: auto !important; height: auto !important; font-weight: bold !important;">⋮</button>
+                      </div>
+                      <p>${addressString}</p>
+                      <button type="button" class="kodyt-btn-deliver-here-action-trigger" style="margin-top:10px;">Deliver Here</button>
+                    </div>
+                  </div>
+                `;
+            const $targetStack = $(
+              "#kodyt-modal-address-drawer-target-stack .kodyt-addresses-vertical-drawer-stack",
+            );
+
+            if (addressId) {
+              // === CASE A: ADDRESS WAS EDITED ===
+              // Find all instances of the old card (e.g., desktop and mobile clones)
+              const $existingCards = $(
+                `.kodyt-drawer-address-row-card[data-id="${addressId}"]`,
+              );
+
+              if ($existingCards.length) {
+                // Insert the fresh card right before the old card, then remove the old one.
+                // Doing this inside an .each() loop ensures both desktop/mobile containers get updated.
+                $existingCards.each(function () {
+                  const $oldCard = $(this);
+                  $oldCard.before(newCardHtml); // Drop the clean card in its exact DOM position
+                  $oldCard.remove(); // Destroy the old card and its stale jQuery memory cache
+                });
+
+                $btn.data("address-id", null);
+              }
+            } else {
+              if ($targetStack.length > 0) {
+                $targetStack.append(newCardHtml);
+              } else {
+                const containerHtml = `<div class="kodyt-addresses-vertical-drawer-stack">${newCardHtml}</div>`;
+                $("#kodyt-modal-address-drawer-target-stack").append(
+                  containerHtml,
+                );
+              }
+              // Before appending, clean existing active selections flags everywhere to allow single select
+              $("*").removeClass("selected-row-default");
+
+              // Auto-select this newly created card instantly using your selection system function
+            }
+
+            const $newlyAddedCardNode = $targetStack.find(
+              `.kodyt-drawer-address-row-card[data-id="${finalId}"]`,
+            );
+            applyCardSelectionToHiddenFormInputs($newlyAddedCardNode);
+
+            // Close the panel layout smoothly only on absolute success
+            $("#kodyt-modal-overlay-address-editor-pane").fadeOut(200);
+
+            // Clear address elements references variables cleanly
+            $btn.data("address-id", null);
+          } else {
+            alert(
+              "Error: " +
+                (response.data?.message || "Failed to process address."),
+            );
+          }
+
+          // Re-enable the DOM interactive submission buttons
+          $btn.prop("disabled", false).text("Save and Deliver Here");
+        },
+        "json",
+      );
+      // REMOVED: Premature fadeOut from down here.
     },
   );
 

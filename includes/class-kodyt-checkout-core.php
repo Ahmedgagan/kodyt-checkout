@@ -15,6 +15,10 @@ class Kodyt_Checkout_Core
     add_action('wp_ajax_nopriv_kodyt_process_checkout', array($this, 'process_final_checkout'));
     add_action('wp_ajax_kodyt_validate_pincode', array($this, 'ajax_backend_pincode_verification'));
     add_action('wp_ajax_nopriv_kodyt_validate_pincode', array($this, 'ajax_backend_pincode_verification'));
+    add_action('wp_ajax_kodyt_save_address', array($this, 'save_address'));
+    add_action('wp_ajax_nopriv_kodyt_save_address', array($this, 'save_address'));
+    add_action('wp_ajax_kodyt_update_address', array($this, 'update_address'));
+    add_action('wp_ajax_nopriv_kodyt_update_address', array($this, 'update_address'));
     add_action('init', array($this, 'register_pending_confirmation_order_status'));
     add_filter('wc_order_statuses', array($this, 'add_pending_confirmation_to_order_statuses'));
 
@@ -23,6 +27,123 @@ class Kodyt_Checkout_Core
     add_filter('woocommerce_add_to_cart_fragments', array($this, 'synchronize_popup_checkout_fragments'));
     // Intercept page loading requests right before template headers are sent to the browser
     add_action('template_redirect', array($this, 'redirect_native_checkout_to_popup_flow'));
+  }
+
+  public function save_address()
+  {
+    $current_user_id = get_current_user_id();
+
+    if (!isset($current_user_id)) {
+      wp_send_json_error(array('message' => 'User Not Logged In'));
+    }
+
+    $auth_phone = get_user_meta($current_user_id, 'phone_number', true);
+
+    if (!isset($auth_phone)) {
+      wp_send_json_error(array('message' => 'User Not Logged In'));
+    }
+
+    // Verify request payload inputs safely
+    if (!isset($_POST['address_1'])) {
+      wp_send_json_error(array('message' => 'Missing parameter input configuration.'));
+    }
+
+    $payload = array();
+
+    $creds = class_exists('Kodyt_Api_Client') ? Kodyt_Api_Client::get_credentials() : array('license_key' => '', 'domain' => '');
+
+    // Fire safe out-of-band server-to-server request
+    $payload['license_key'] = isset($creds['license_key']) ? $creds['license_key'] : '';
+    $payload['domain'] = isset($creds['domain']) ? $creds['domain'] : '';
+    $payload['mobile_number'] = $auth_phone;
+    $payload['pincode'] = sanitize_text_field($_POST['pincode']);
+    $payload['first_name'] = sanitize_text_field($_POST['first_name']);
+    $payload['last_name'] = sanitize_text_field($_POST['last_name']);
+    $payload['email'] = sanitize_text_field($_POST['email']);
+    $payload['address_1'] = sanitize_text_field($_POST['address_1']);
+    $payload['address_2'] = sanitize_text_field($_POST['address_2']);
+    $payload['city'] = sanitize_text_field($_POST['city']);
+    $payload['state'] = sanitize_text_field($_POST['state']);
+
+    $response = wp_remote_post(API_URL . '/v1/addresses/add', array(
+      'method'    => 'POST',
+      'timeout'   => 15,
+      'blocking'  => true,
+      'headers'   => array('Content-Type' => 'application/json; charset=utf-8'),
+      'body'      => wp_json_encode($payload),
+      'sslverify' => false
+    ));
+
+    $response_code = wp_remote_retrieve_response_code($response);
+    $response_body_raw = wp_remote_retrieve_body($response);
+    $response_body = json_decode($response_body_raw, true);
+
+    if (200 != $response_code || is_wp_error($response)) {
+      wp_send_json_error(array('message' => 'Something Went Wrong! Error Saving Address.'));
+    }
+
+    wp_send_json(array('success' => true, 'result' => 'success', 'new_address_id' => $response_body['new_address_id']));
+  }
+
+  public function update_address()
+  {
+    $current_user_id = get_current_user_id();
+
+    if (!isset($current_user_id)) {
+      wp_send_json_error(array('message' => 'User Not Logged In'));
+    }
+
+    $auth_phone = get_user_meta($current_user_id, 'phone_number', true);
+
+    if (!isset($auth_phone)) {
+      wp_send_json_error(array('message' => 'User Not Logged In'));
+    }
+
+    // Verify request payload inputs safely
+    if (!isset($_POST['address_1'])) {
+      wp_send_json_error(array('message' => 'Missing parameter input configuration.'));
+    }
+
+    if (!isset($_POST['address_id'])) {
+      wp_send_json_error(array('message' => 'Missing parameter input configuration.'));
+    }
+
+    $payload = array();
+
+    $creds = class_exists('Kodyt_Api_Client') ? Kodyt_Api_Client::get_credentials() : array('license_key' => '', 'domain' => '');
+
+    // Fire safe out-of-band server-to-server request
+    $payload['address_id'] = isset($_POST['address_id']) ? $_POST['address_id'] : '';
+    $payload['license_key'] = isset($creds['license_key']) ? $creds['license_key'] : '';
+    $payload['domain'] = isset($creds['domain']) ? $creds['domain'] : '';
+    $payload['mobile_number'] = $auth_phone;
+    $payload['pincode'] = sanitize_text_field($_POST['pincode']);
+    $payload['first_name'] = sanitize_text_field($_POST['first_name']);
+    $payload['last_name'] = sanitize_text_field($_POST['last_name']);
+    $payload['email'] = sanitize_text_field($_POST['email']);
+    $payload['address_1'] = sanitize_text_field($_POST['address_1']);
+    $payload['address_2'] = sanitize_text_field($_POST['address_2']);
+    $payload['city'] = sanitize_text_field($_POST['city']);
+    $payload['state'] = sanitize_text_field($_POST['state']);
+
+    $response = wp_remote_post(API_URL . '/v1/addresses/update', array(
+      'method'    => 'PUT',
+      'timeout'   => 15,
+      'blocking'  => true,
+      'headers'   => array('Content-Type' => 'application/json; charset=utf-8'),
+      'body'      => wp_json_encode($payload),
+      'sslverify' => false
+    ));
+
+    $response_code = wp_remote_retrieve_response_code($response);
+    $response_body_raw = wp_remote_retrieve_body($response);
+    $response_body = json_decode($response_body_raw, true);
+
+    if (200 != $response_code || is_wp_error($response)) {
+      wp_send_json_error(array('message' => 'Something Went Wrong! Error Saving Address.'));
+    }
+
+    wp_send_json(array('success' => true, 'result' => 'success', 'new_address_id' => $response_body['new_address_id']));
   }
 
   public function redirect_native_checkout_to_popup_flow()
@@ -106,7 +227,7 @@ class Kodyt_Checkout_Core
 
     // Formulate clean destination request URL
     $api_url = sprintf(
-      'http://api.kodyt.com/v1/pincode/%s?license_key=%s&domain=%s',
+      API_URL . '/v1/pincode/%s?license_key=%s&domain=%s',
       urlencode($pincode),
       urlencode($creds['license_key']),
       urlencode($creds['domain'])

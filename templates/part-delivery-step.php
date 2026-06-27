@@ -27,17 +27,17 @@ if (!isset($shipping_phone)) {
       $is_first = true;
 
       foreach ($native_addresses['shipping'] as $addr) {
-        $formatted_phone = $addr['phone'];
+        // $formatted_phone = $addr['phone'];
 
         $row_class = $is_first ? 'kodyt-drawer-address-row-card selected-row-default' : 'kodyt-drawer-address-row-card';
         $checked_attr = $is_first ? 'checked' : '';
         $type_badge_label = (!empty($addr['type']) && strpos(strtolower($addr['type']), 'shipping') !== false) ? 'Home' : 'Office';
-
+        // data-sphone="' . esc_attr($formatted_phone) . '"
         echo '<div class="' . $row_class . '"
+            data-id="' . esc_attr($addr['address_id']) . '"
             data-fname="' . esc_attr($addr['first_name']) . '"
             data-lname="' . esc_attr($addr['last_name']) . '"
             data-email="' . esc_attr($addr['email']) . '"
-            data-sphone="' . esc_attr($formatted_phone) . '"
             data-addr1="' . esc_attr($addr['address_1']) . '"
             data-addr2="' . esc_attr($addr['address_2']) . '"
             data-city="' . esc_attr($addr['city']) . '"
@@ -45,7 +45,7 @@ if (!isset($shipping_phone)) {
             data-postcode="' . esc_attr($addr['postcode']) . '">';
 
         echo '  <div class="kodyt-row-card-right-details" style="position: relative;">';
-        echo '     <div class="kodyt-card-name-row">';
+        echo '     <div class="kodyt-card-name-row" style="position: relative; width: 100%;">';
         echo '         <strong>' . esc_html($addr['first_name'] . ' ' . $addr['last_name']) . '</strong>';
         echo '         <span class="badge-type-home">' . esc_html($type_badge_label) . '</span>';
         echo '         <button type="button" class="kodyt-checkout-edit-address-trigger" title="Edit Address" style="position: absolute; right: 0; top: -2px; background: none !important; border: none !important; color: #64748b !important; font-size: 16px !important; cursor: pointer !important; padding: 0 !important; width: auto !important; height: auto !important; font-weight: bold !important;">⋮</button>';

@@ -16,6 +16,20 @@ jQuery(document).ready(function ($) {
     "billing",
   );
 
+  function formatAddress(address, city) {
+    const escapedCity = city.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+
+    // Matches optional comma/spaces before the city, the city itself, and everything after
+    // 'i' flag makes it case-insensitive (equivalent to /i in PHP)
+    const cityRegex = new RegExp(",?\\s*" + escapedCity + ".*", "i");
+    address = address.replace(cityRegex, "");
+
+    // Clean up trailing/leading commas or double commas resulting from removals
+    address = address.replace(/,+/g, ","); // Replace multiple commas with one
+    address = address.trim().replace(/^,+|,+$/g, ""); // Trim commas and spaces from ends
+    return address;
+  }
+
   function setupAutocompleteWatcher(inputSelector, boxSelector, prefix) {
     $(document).on("input", inputSelector, function () {
       let query = $(this).val();
@@ -62,6 +76,7 @@ jQuery(document).ready(function ($) {
         let selectedId = $(this).data("id");
         let selectedText = $(this).data("text");
         $(inputSelector).val(selectedText);
+
         $(boxSelector).hide().empty();
 
         $.post(
@@ -80,7 +95,14 @@ jQuery(document).ready(function ($) {
                 $(`#kodyt_${prefix}_address_2`).val(
                   addr.address_2 || addr.building_number,
                 );
-              if (addr.city) $(`#kodyt_${prefix}_city`).val(addr.city);
+              if (addr.city) {
+                selectedText = formatAddress(selectedText, addr.city);
+
+                $(inputSelector).val(selectedText);
+
+                $(`#kodyt_${prefix}_city`).val(addr.city);
+              }
+
               if (addr.state) $(`#kodyt_${prefix}_state`).val(addr.state);
               let postcode =
                 addr.postcode || addr.zip || addr.postal_code || "";

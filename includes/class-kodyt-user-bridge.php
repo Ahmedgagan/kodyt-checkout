@@ -59,71 +59,34 @@ class Kodyt_User_Bridge
     $customer = new WC_Customer($user_id);
     if (! $customer) return array();
 
-    global $wpdb;
+    $creds = class_exists('Kodyt_Api_Client') ? Kodyt_Api_Client::get_credentials() : array('license_key' => '', 'domain' => '');
 
-    $unique_full_addresses = $wpdb->get_results($wpdb->prepare("
-      SELECT
-          a.first_name,
-          a.last_name,
-          a.company,
-          a.address_1,
-          a.address_2,
-          a.city,
-          a.state,
-          a.postcode,
-          a.country,
-          a.email,
-          a.phone
-      FROM {$wpdb->prefix}wc_order_addresses AS a
-      INNER JOIN {$wpdb->prefix}wc_orders AS o ON o.id = a.order_id
-      WHERE o.customer_id = %d
-        AND o.status IN ('wc-completed', 'wc-processing')
-        AND a.address_type = 'shipping'
-        AND a.address_1 IS NOT NULL
-        AND a.address_1 != ''
-      GROUP BY
-          a.address_1
-      ORDER BY date_created_gmt desc
-    ", $user_id), ARRAY_A);
+    $auth_phone = get_user_meta($user_id, 'phone_number', true);
 
+    if (! $auth_phone) return array();
+    // $license_key = get_option('kodyt_checkout_license_key', 'test-key-1234');
+    // $site_domain = wp_parse_url(home_url(), PHP_URL_HOST);
+
+    // Formulate clean destination request URL
+    $api_url = sprintf(
+      API_URL . '/v1/addresses?mobile_number=%s&license_key=%s&domain=%s',
+      urlencode($auth_phone),
+      urlencode($creds['license_key']),
+      urlencode($creds['domain'])
+    );
+
+    $response = wp_remote_get($api_url, array('timeout' => 8, 'sslverify' => false));
+
+    if (is_wp_error($response)) return array();
+
+    $response_code = wp_remote_retrieve_response_code($response);
+    $response_body = json_decode(wp_remote_retrieve_body($response), true);
+
+    if (200 !== $response_code || empty($response_body)) return array();
 
     $addresses = array();
 
-    $addresses['shipping'] = $unique_full_addresses;
-
-    // // 1. Core Shipping Address Fields
-    // if (! empty($customer->get_shipping_address_1())) {
-    //   $addresses['shipping'] = array(
-    //     'type'           => 'Default Shipping',
-    //     'first_name'     => $customer->get_shipping_first_name(),
-    //     'last_name'      => $customer->get_shipping_last_name(),
-    //     'company'        => $customer->get_shipping_company(),
-    //     'address_1'      => $customer->get_shipping_address_1(),
-    //     'address_2'      => $customer->get_shipping_address_2(),
-    //     'city'           => $customer->get_shipping_city(),
-    //     'state'           => $customer->get_shipping_state(),
-    //     'postcode'       => $customer->get_shipping_postcode(),
-    //     'phone'          => get_user_meta($customer->get_id(), 'shipping_phone', true) ?: $customer->get_billing_phone(),
-    //     'email'          => $customer->get_billing_email() // Shipping doesn't have a native email field
-    //   );
-    // }
-
-    // // 2. Core Billing Address Fields
-    // if (! empty($customer->get_billing_address_1())) {
-    //   $addresses['billing'] = array(
-    //     'type'           => 'Default Billing',
-    //     'first_name'     => $customer->get_billing_first_name(),
-    //     'last_name'      => $customer->get_billing_last_name(),
-    //     'company'        => $customer->get_billing_company(),
-    //     'address_1'      => $customer->get_billing_address_1(),
-    //     'address_2'      => $customer->get_billing_address_2(),
-    //     'state'           => $customer->get_billing_state(),
-    //     'city'           => $customer->get_billing_city(),
-    //     'postcode'       => $customer->get_billing_postcode(),
-    //     'phone'          => $customer->get_billing_phone(),
-    //     'email'          => $customer->get_billing_email()
-    //   );
-    // }
+    $addresses['shipping'] = $response_body['addresses'];
 
     return $addresses;
   }
