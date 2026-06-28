@@ -117,13 +117,20 @@ jQuery(document).ready(function ($) {
     const formElement = $("#kodyt-custom-checkout-form");
     let missingFieldsCount = 0;
     let firstMissingField = null;
-
+    let activeAddressId = $(
+      ".kodyt-drawer-address-row-card.selected-row-default",
+    ).attr("data-id");
     // =========================================================================
     // 1. SCAN ALL REQUIRED FIELDS (EVEN IF HIDDEN INSIDE THE POPUP DRAWER)
     // =========================================================================
     formElement
       .find("input[required], select[required], textarea[required]")
       .each(function () {
+        if (!activeAddressId) {
+          alert("Address Not saved!");
+          return false;
+        }
+
         // Skip checking the OTP field if it's already done
         if ($(this).attr("id") === "kodyt_account_otp_input") {
           return true; // continue
@@ -185,6 +192,7 @@ jQuery(document).ready(function ($) {
 
     let searchParams = new URLSearchParams(formElement.serialize());
 
+    searchParams.set("kodyt_address_id", activeAddressId);
     searchParams.set("kodyt_auth_phone", verifiedAuthMobile);
     searchParams.set("kodyt_shipping_phone", shippingMobileValue);
     searchParams.set("kodyt_billing_phone", shippingMobileValue);

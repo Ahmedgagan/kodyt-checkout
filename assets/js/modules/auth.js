@@ -485,7 +485,7 @@ jQuery(document).ready(function ($) {
                     </div>
                   </div>
                 `;
-            const $targetStack = $(
+            let $targetStack = $(
               "#kodyt-modal-address-drawer-target-stack .kodyt-addresses-vertical-drawer-stack",
             );
 
@@ -515,6 +515,10 @@ jQuery(document).ready(function ($) {
                 $("#kodyt-modal-address-drawer-target-stack").append(
                   containerHtml,
                 );
+
+                $targetStack = $(
+                  "#kodyt-modal-address-drawer-target-stack .kodyt-addresses-vertical-drawer-stack",
+                );
               }
               // Before appending, clean existing active selections flags everywhere to allow single select
               $("*").removeClass("selected-row-default");
@@ -525,6 +529,7 @@ jQuery(document).ready(function ($) {
             const $newlyAddedCardNode = $targetStack.find(
               `.kodyt-drawer-address-row-card[data-id="${finalId}"]`,
             );
+
             applyCardSelectionToHiddenFormInputs($newlyAddedCardNode);
 
             // Close the panel layout smoothly only on absolute success

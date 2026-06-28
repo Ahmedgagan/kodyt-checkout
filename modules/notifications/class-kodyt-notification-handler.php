@@ -7,10 +7,14 @@ class Kodyt_Notification_Handler
    * Static Trigger: Executed directly from the core checkout logic pipeline.
    * Completely isolated with global try/catch wrappers to guarantee checkout never freezes.
    */
-  public static function trigger_whatsapp_order_notification($order_id, $order = null)
+  public static function trigger_whatsapp_order_notification($order_id, $order = null, $address_id = null)
   {
     try {
       if (empty($order_id)) {
+        return;
+      }
+
+      if (empty($address_id)) {
         return;
       }
 
@@ -105,7 +109,7 @@ class Kodyt_Notification_Handler
           'customer_phone'   => $phone,
           'items'            => $items_flattened_string,
           'total_amount'     => $clean_amount_string, // ◄ Passes clean numeric string "1801.00"
-          'shipping_address' => $address_lines, // ◄ Passes crisp, de-duplicated address line
+          'address_id'       => $address_id, // ◄ Passes crisp, de-duplicated address line
           'isUsingCustomKey' => false
         );
         // Perform non-blocking background network post to keep checkout instant

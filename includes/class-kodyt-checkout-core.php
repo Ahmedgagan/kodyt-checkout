@@ -368,11 +368,12 @@ class Kodyt_Checkout_Core
     parse_str($_POST['form_data'], $posted_data);
     $auth_phone         = isset($posted_data['kodyt_auth_phone']) ? sanitize_text_field($posted_data['kodyt_auth_phone']) : '';
     $user_id            = isset($posted_data['kodyt_in_memory_user_id']) ? intval($posted_data['kodyt_in_memory_user_id']) : 0;
+    $address_id            = isset($posted_data['kodyt_address_id']) ? intval($posted_data['kodyt_address_id']) : 0;
     $auth_dial_code     = isset($posted_data['kodyt_country_dial_code']) ? sanitize_text_field($posted_data['kodyt_country_dial_code']) : '';
 
     $shipping_dial_code = isset($posted_data['kodyt_shipping_country_dial_code']) ? sanitize_text_field($posted_data['kodyt_shipping_country_dial_code']) : '';
 
-    if (empty($auth_phone) || empty($user_id)) {
+    if (empty($auth_phone) || empty($user_id) || empty($address_id)) {
       wp_send_json_error(array('message' => 'Session expired. Execute step 1 verification again.'));
     }
 
@@ -479,7 +480,7 @@ class Kodyt_Checkout_Core
           }
 
           // The notification handler now automatically pulls the fully formatted numbers directly out of the order objects!
-          Kodyt_Notification_Handler::trigger_whatsapp_order_notification($order_id, $order);
+          Kodyt_Notification_Handler::trigger_whatsapp_order_notification($order_id, $order, $address_id);
         }
 
         wp_send_json(array('result' => 'success', 'redirect' => $result['redirect']));
