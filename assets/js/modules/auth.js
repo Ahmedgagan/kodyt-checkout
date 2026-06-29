@@ -845,6 +845,194 @@ jQuery(document).ready(function ($) {
     },
   );
 
+  // Flag tracking to prevent recursive backend loops
+  let isRefreshingView = false;
+
+  // =========================================================================
+  // CENTRALIZED VIEWPORT REFRESH ENGINE
+  // =========================================================================
+  function triggerKodytCheckoutRefresh() {
+    if (isRefreshingView) return;
+
+    const $viewport = $(".kodyt-popup-scrollable-body-viewport");
+    if (!$viewport.length) return;
+
+    isRefreshingView = true;
+    $viewport.css("opacity", "0.5");
+
+    // Capture the exact DOM data-id attribute of the currently selected card
+    const activeAddressId = $(
+      ".kodyt-drawer-address-row-card.selected-row-default",
+    ).attr("data-id");
+
+    const selectedPaymentMethod =
+      $('input[name="kodyt_payment_method"]:checked').val() || "cod";
+
+    jQuery
+      .post(
+        params.ajax_url,
+        {
+          action: "kodyt_refresh_checkout_view",
+          payment_method: selectedPaymentMethod,
+        },
+        function (response) {
+          if (response && response.success) {
+            $viewport.html(response.data.html);
+
+            // Restore selection status cleanly using the captured state ID
+            if (activeAddressId) {
+              const $savedCard = $viewport.find(
+                `.kodyt-drawer-address-row-card[data-id="${activeAddressId}"]`,
+              );
+              if ($savedCard.length) {
+                $("*").removeClass("selected-row-default");
+                $savedCard.addClass("selected-row-default");
+
+                if (
+                  typeof applyCardSelectionToHiddenFormInputs === "function"
+                ) {
+                  applyCardSelectionToHiddenFormInputs($savedCard);
+                }
+              }
+            } else {
+              // Fallback: If no address was active before, run the default picker
+              ensureDefaultAddressIsSelected();
+            }
+          }
+          $viewport.css("opacity", "1");
+          isRefreshingView = false;
+        },
+        "json",
+      )
+      .fail(function () {
+        $viewport.css("opacity", "1");
+        isRefreshingView = false;
+      });
+  }
+
+  // =========================================================================
+  // AUTOMATIC DEFAULT SELECTION INITIALIZER
+  // =========================================================================
+  function ensureDefaultAddressIsSelected() {
+    // Look inside your active visible stack drawer framework
+    const $targetStack = $("#kodyt-modal-address-drawer-target-stack");
+
+    // Check if an address row card is already explicitly marked selected
+    if (
+      $targetStack.find(".kodyt-drawer-address-row-card.selected-row-default")
+        .length === 0
+    ) {
+      const $firstCard = $targetStack
+        .find(".kodyt-drawer-address-row-card")
+        .first();
+
+      if (
+        $firstCard.length &&
+        typeof applyCardSelectionToHiddenFormInputs === "function"
+      ) {
+        $firstCard.addClass("selected-row-default");
+        applyCardSelectionToHiddenFormInputs($firstCard);
+      }
+    } else {
+      // If a card already has the class from the server, hydrate the inputs immediately
+      const $activeCard = $targetStack.find(
+        ".kodyt-drawer-address-row-card.selected-row-default",
+      );
+      if (typeof applyCardSelectionToHiddenFormInputs === "function") {
+        applyCardSelectionToHiddenFormInputs($activeCard);
+      }
+    }
+  }
+
+  // =========================================================================
+  // APPROACH A: TRACKING LAYER FOR MODERN BLOCK THEMES (Twenty Twenty-Five/Six)
+  // =========================================================================
+  function initBlockThemeObserver() {
+    if (
+      window.wp &&
+      window.wp.data &&
+      typeof window.wp.data.subscribe === "function"
+    ) {
+      let previousCartHash = "";
+
+      window.wp.data.subscribe(function () {
+        // Guard clause: stop calculation steps if our own AJAX refresh execution is running
+        if (isRefreshingView) return;
+
+        try {
+          const cartStore = window.wp.data.select("wc/store/cart");
+          if (!cartStore) return;
+
+          const cartData = cartStore.getCartData();
+          if (!cartData || !cartData.items) return;
+
+          // STRICT HASHING FILTER: Only map properties that mutate cart state items counts or unique identifiers
+          const currentCartHash = cartData.items
+            .map((i) => i.key + "_" + i.quantity)
+            .join("|");
+
+          if (currentCartHash !== previousCartHash) {
+            // Only update hash and trigger if it's NOT the initial empty render setup
+            if (previousCartHash !== "") {
+              previousCartHash = currentCartHash;
+              triggerKodytCheckoutRefresh();
+            } else {
+              previousCartHash = currentCartHash; // Seed hash baseline quietly on initialization
+            }
+          }
+        } catch (e) {}
+      });
+    } else {
+      setTimeout(initBlockThemeObserver, 200);
+    }
+  }
+
+  // =========================================================================
+  // APPROACH B: TRACKING LAYER FOR CLASSIC THEMES
+  // =========================================================================
+  function initClassicThemeObserver() {
+    $(document).ajaxComplete(function (event, xhr, settings) {
+      if (isRefreshingView) return;
+      if (
+        settings.url.indexOf("wc-ajax=update_order_review") !== -1 ||
+        settings.url.indexOf("wc-ajax=remove_from_cart") !== -1
+      ) {
+        triggerKodytCheckoutRefresh();
+      }
+    });
+  }
+
+  // =========================================================================
+  // DOCUMENT DOM STAGE RUNNER
+  // =========================================================================
+  $(document).ready(function () {
+    // 1. Force state initialization for selection visibility layout elements immediately
+    ensureDefaultAddressIsSelected();
+
+    // 2. Fire environment script sniffing routines
+    if (window.wp && window.wp.data) {
+      initBlockThemeObserver();
+    }
+    initClassicThemeObserver();
+  });
+
+  // Re-run standard selections sanity checks whenever your global popup checkout view opens
+  $(document).on("click", ".kodyt-checkout-open-button-trigger", function () {
+    setTimeout(ensureDefaultAddressIsSelected, 50);
+  });
+
+  // Listen to whenever your custom checkout form changes its payment selection rules
+  $(document).on(
+    "change",
+    'input[name="kodyt_payment_method"], input[name="payment_method"]',
+    function () {
+      // Trigger our centralized refresh function that we mapped out in previous steps
+      if (typeof triggerKodytCheckoutRefresh === "function") {
+        triggerKodytCheckoutRefresh();
+      }
+    },
+  );
+
   // =========================================================================
   // DYNAMIC ADDRESS STACK COMPONENT PRIMING CONTROLLER
   // =========================================================================

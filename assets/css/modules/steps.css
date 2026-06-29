@@ -11,7 +11,8 @@
 }
 
 .kodyt-checkout-canvas-shell .kodyt-form-row > input,
-.kodyt-checkout-canvas-shell .kodyt-form-row > .iti {
+.kodyt-checkout-canvas-shell .kodyt-form-row > .iti,
+#kodyt_shipping_postcode_container {
     flex: 1 1 50% !important;
     max-width: calc(50% - 6px) !important;
     min-width: 0 !important;

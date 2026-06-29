@@ -24,8 +24,18 @@
 
   $cart_item_count = WC()->cart->get_cart_contents_count();
   $total_discount  = WC()->cart->get_discount_total();
-  ?>
 
+  $kodyt_current_ui_hash = '';
+  if (function_exists('WC') && WC()->cart) {
+    $cart_snapshot_keys = array();
+    foreach (WC()->cart->get_cart() as $key => $item) {
+      $cart_snapshot_keys[] = $key . '_' . $item['quantity'];
+    }
+    sort($cart_snapshot_keys);
+    $kodyt_current_ui_hash = md5(implode('|', $cart_snapshot_keys));
+  }
+  ?>
+  <input type="hidden" id="kodyt_rendered_cart_hash" name="kodyt_rendered_cart_hash" value="<?php echo esc_attr($kodyt_current_ui_hash); ?>" />
   <input type="hidden" id="kodyt_in_memory_user_id" value="<?php echo esc_attr($in_memory_user_id); ?>" />
   <input type="hidden" id="kodyt_auth_phone" value="<?php echo esc_attr($pre_filled_phone); ?>" />
 
@@ -50,7 +60,31 @@
             • <?php echo $cart_item_count; ?> items
           </div>
           <div class="kodyt-nav-pricing-cluster">
-            <strong id="kodyt-toggle-bar-grandtotal"><?php echo WC()->cart->get_cart_total(); ?></strong>
+            <strong id="kodyt-toggle-bar-grandtotal">
+              <?php
+              // Run the exact identical calculation to keep both display zones in sync
+              $kodyt_bar_math = (float) WC()->cart->get_subtotal();
+
+              $applied_coupons = WC()->cart->get_applied_coupons();
+              if (!empty($applied_coupons)) {
+                foreach ($applied_coupons as $coupon_code) {
+                  $kodyt_bar_math -= (float) WC()->cart->get_coupon_discount_amount($coupon_code);
+                }
+              }
+
+              if (function_exists('WC') && WC()->cart) {
+                foreach (WC()->cart->get_fees() as $fee) {
+                  $kodyt_bar_math += (float) $fee->amount;
+                }
+              }
+
+              if ($kodyt_bar_math < 0) {
+                $kodyt_bar_math = 0;
+              }
+
+              echo wc_price($kodyt_bar_math);
+              ?>
+            </strong>
           </div>
           <span class="kodyt-summary-arrow">▼</span>
         </div>
@@ -78,7 +112,9 @@
           <hr class="kodyt-divider" />
 
           <div class="kodyt-totals-list">
+            <!-- 1. BASE SUBTOTAL -->
             <div class="kodyt-total-row"><span>MRP Total</span><span><?php echo WC()->cart->get_cart_subtotal(); ?></span></div>
+
             <div id="kodyt-applied-coupons-rows-wrap">
               <?php
               $applied_coupons = WC()->cart->get_applied_coupons();
@@ -93,8 +129,60 @@
               }
               ?>
             </div>
+
+            <!-- 2. DYNAMIC PREPAID DISCOUNT / COD EXTRA FEES LAYER -->
+            <?php
+            $kodyt_total_fees_modifier = 0; // Initialize manual calculation accumulator variable
+
+            if (function_exists('WC') && WC()->cart) {
+              foreach (WC()->cart->get_fees() as $fee) {
+                // Accumulate dynamic values into the totals calculation stream
+                $kodyt_total_fees_modifier += $fee->amount;
+
+                $is_discount = ($fee->amount < 0);
+                $text_color  = $is_discount ? '#00b074' : '#ef4444'; // Green for discount, Red for COD handling charge
+                $font_weight = '600';
+                $prefix      = $is_discount ? '-' : '+';
+                $clean_price = wc_price(abs($fee->amount));
+
+                echo '<div class="kodyt-total-row custom-adjustment-row" style="color: ' . $text_color . '; font-weight: ' . $font_weight . ';">';
+                echo '  <span>' . esc_html($fee->name) . '</span>';
+                echo '  <span>' . $prefix . $clean_price . '</span>';
+                echo '</div>';
+              }
+            }
+            ?>
+
             <div class="kodyt-total-row"><span>Shipping</span><span style="color: #00b074; font-weight: 600;">FREE</span></div>
-            <div class="kodyt-total-row final-total"><span>To Pay</span><span id="kodyt-calc-grandtotal"><strong><?php echo WC()->cart->get_cart_total(); ?></strong></span></div>
+
+            <?php
+            // Start with the raw subtotal before any coupons or fees
+            $kodyt_math_total = (float) WC()->cart->get_subtotal();
+
+            // Subtract any active coupon amounts safely
+            $applied_coupons = WC()->cart->get_applied_coupons();
+            if (!empty($applied_coupons)) {
+              foreach ($applied_coupons as $coupon_code) {
+                $kodyt_math_total -= (float) WC()->cart->get_coupon_discount_amount($coupon_code);
+              }
+            }
+
+            // Add or subtract our exact active fees
+            if (function_exists('WC') && WC()->cart) {
+              foreach (WC()->cart->get_fees() as $fee) {
+                $kodyt_math_total += (float) $fee->amount;
+              }
+            }
+
+            // Guarantee order values never drop below zero
+            if ($kodyt_math_total < 0) {
+              $kodyt_math_total = 0;
+            }
+            ?>
+            <div class="kodyt-total-row final-total">
+              <span>To Pay</span>
+              <span id="kodyt-calc-grandtotal"><strong><?php echo wc_price($kodyt_math_total); ?></strong></span>
+            </div>
           </div>
         </div>
       </div>

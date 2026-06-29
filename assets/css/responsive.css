@@ -52,7 +52,7 @@
 
     /* 5. Clean up forms spacing */
     .kodyt-step { padding: 16px; margin-bottom: 12px; }
-    .kodyt-form-row { flex-direction: column; gap: 12px; }
+    /* .kodyt-form-row { flex-direction: column; gap: 12px; } */
 
     /* Force form rows to drop down to full width when stacked */
     .kodyt-form-row > input[type="email"],
@@ -63,8 +63,4 @@
 
     .kodyt-input-group { flex-direction: column; gap: 8px; }
     .kodyt-input-group button { width: 100% !important; }
-
-    #kodyt_shipping_postcode_container {
-        width: 100%;
-    }
 }

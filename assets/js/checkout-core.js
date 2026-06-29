@@ -111,7 +111,7 @@ jQuery(document).ready(function ($) {
   });
 
   // Form final submit checkout handler
-  $("#kodyt-btn-place-order").on("click", function (e) {
+  $(document).on("click", "#kodyt-btn-place-order", function (e) {
     e.preventDefault();
 
     const formElement = $("#kodyt-custom-checkout-form");
@@ -199,6 +199,10 @@ jQuery(document).ready(function ($) {
     searchParams.set(
       "kodyt_in_memory_user_id",
       $("#kodyt_in_memory_user_id").val(),
+    );
+    searchParams.set(
+      "kodyt_rendered_cart_hash",
+      $("#kodyt_rendered_cart_hash").val(),
     );
 
     searchParams.set("kodyt_country_dial_code", authDialCode);

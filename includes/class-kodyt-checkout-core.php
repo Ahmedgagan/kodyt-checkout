@@ -19,6 +19,9 @@ class Kodyt_Checkout_Core
     add_action('wp_ajax_nopriv_kodyt_save_address', array($this, 'save_address'));
     add_action('wp_ajax_kodyt_update_address', array($this, 'update_address'));
     add_action('wp_ajax_nopriv_kodyt_update_address', array($this, 'update_address'));
+    // Register the AJAX hooks for both logged-in and guest users
+    add_action('wp_ajax_kodyt_refresh_checkout_view', array($this, 'handle_refresh_checkout_view'));
+    add_action('wp_ajax_nopriv_kodyt_refresh_checkout_view', array($this, 'handle_refresh_checkout_view'));
     add_action('init', array($this, 'register_pending_confirmation_order_status'));
     add_filter('wc_order_statuses', array($this, 'add_pending_confirmation_to_order_statuses'));
 
@@ -27,6 +30,69 @@ class Kodyt_Checkout_Core
     add_filter('woocommerce_add_to_cart_fragments', array($this, 'synchronize_popup_checkout_fragments'));
     // Intercept page loading requests right before template headers are sent to the browser
     add_action('template_redirect', array($this, 'redirect_native_checkout_to_popup_flow'));
+    add_action('woocommerce_cart_calculate_fees', array($this, 'kodyt_apply_prepaid_vs_cod_adjustments'));
+  }
+
+  public function kodyt_apply_prepaid_vs_cod_adjustments($cart)
+  {
+    if (is_admin() && !defined('DOING_AJAX')) return;
+
+    // Pull directly from the active live WooCommerce user session layer
+    $chosen_gateway = WC()->session ? WC()->session->get('chosen_payment_method') : '';
+
+    // Fallback if session is blank but form data is present
+    if (empty($chosen_gateway) && isset($_POST['form_data'])) {
+      parse_str($_POST['form_data'], $posted_data);
+      $chosen_gateway = isset($posted_data['kodyt_payment_method']) ? sanitize_text_field($posted_data['kodyt_payment_method']) : '';
+    }
+
+    if (empty($chosen_gateway)) return;
+
+    // Use the comprehensive Cart Fees API array instead of the basic positional parameters
+    if ('cod' === $chosen_gateway) {
+      $cart->fees_api()->add_fee(array(
+        'id'       => 'kodyt_cod_handling_charge', // UNIQUE HOOK KEY (Blocks compounding loops)
+        'name'     => __('COD Handling Fee', 'kodyt-checkout'),
+        'amount'   => 100, // Flat ₹100 for the full cart
+        'taxable'  => false,
+      ));
+    } else {
+      $cart->fees_api()->add_fee(array(
+        'id'       => 'kodyt_prepaid_order_discount', // UNIQUE HOOK KEY (Blocks compounding loops)
+        'name'     => __('Prepaid Order Discount', 'kodyt-checkout'),
+        'amount'   => -500, // Flat -₹100 reduction for the full cart
+        'taxable'  => false,
+      ));
+    }
+  }
+
+
+  public function handle_refresh_checkout_view()
+  {
+    if (isset($_POST['payment_method'])) {
+      $method = sanitize_text_field($_POST['payment_method']);
+      WC()->session->set('chosen_payment_method', $method);
+    }
+    // Optional: Verify security nonce if passed
+    // check_ajax_referer('checkout_nonce', 'security');
+
+    // Force WooCommerce to recalculate totals right before rendering
+    if (WC()->cart) {
+      WC()->cart->calculate_fees();
+      WC()->cart->calculate_totals();
+    }
+
+    ob_start();
+
+    // Load your updated layout engine partial exactly like your rendering method does
+    include KODYT_CHECKOUT_PATH . 'templates/checkout-view.php';
+
+    $updated_html = ob_get_clean();
+
+    // Send the fresh HTML back to the JavaScript listener
+    wp_send_json_success(array(
+      'html' => $updated_html
+    ));
   }
 
   public function save_address()
@@ -366,6 +432,23 @@ class Kodyt_Checkout_Core
     }
 
     parse_str($_POST['form_data'], $posted_data);
+
+    $frontend_rendered_hash = isset($posted_data['kodyt_rendered_cart_hash']) ? sanitize_text_field($posted_data['kodyt_rendered_cart_hash']) : '';
+
+    $live_server_cart_snapshot = array();
+    foreach (WC()->cart->get_cart() as $key => $item) {
+      $live_server_cart_snapshot[] = $key . '_' . $item['quantity'];
+    }
+    sort($live_server_cart_snapshot);
+    $live_calculated_hash = md5(implode('|', $live_server_cart_snapshot));
+
+    if ($frontend_rendered_hash !== $live_calculated_hash) {
+      wp_send_json_error(array(
+        'cart_mismatch' => true,
+        'message'       => __('Your shopping cart has changed in another window. Please refresh the window to show the correct items.', 'kodyt-checkout')
+      ));
+    }
+
     $auth_phone         = isset($posted_data['kodyt_auth_phone']) ? sanitize_text_field($posted_data['kodyt_auth_phone']) : '';
     $user_id            = isset($posted_data['kodyt_in_memory_user_id']) ? intval($posted_data['kodyt_in_memory_user_id']) : 0;
     $address_id            = isset($posted_data['kodyt_address_id']) ? intval($posted_data['kodyt_address_id']) : 0;
@@ -404,6 +487,19 @@ class Kodyt_Checkout_Core
       foreach (WC()->cart->get_cart() as $cart_item_key => $values) {
         $order->add_product($values['data'], $values['quantity'], array('variation' => $values['variation']));
       }
+
+      $payment_method = sanitize_text_field($posted_data['kodyt_payment_method']);
+
+      $fee_item = new WC_Order_Item_Fee();
+      if ('cod' === $payment_method) {
+        $fee_item->set_name(__('COD Handling Fee', 'kodyt-checkout'));
+        $fee_item->set_total(100);
+      } else {
+        $fee_item->set_name(__('Prepaid Order Discount', 'kodyt-checkout'));
+        $fee_item->set_total(-100); // Negative makes it a visible total discount line item
+      }
+
+      $order->add_item($fee_item);
 
       $order->set_address($shipping_args, 'billing');
       $order->set_address($shipping_args, 'shipping');

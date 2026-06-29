@@ -11,8 +11,8 @@ if (! defined('ABSPATH')) exit;
 
 define('KODYT_CHECKOUT_PATH', plugin_dir_path(__FILE__));
 define('KODYT_CHECKOUT_URL', plugin_dir_url(__FILE__));
-// define('API_URL', 'https://api.kodyt.com');
-define('API_URL', 'http://localhost:3000');
+define('API_URL', 'https://api.kodyt.com');
+// define('API_URL', 'http://localhost:3000');
 
 // Autoload Core Infrastructure Dependencies
 require_once KODYT_CHECKOUT_PATH . 'includes/class-kodyt-checkout-core.php';
