@@ -37,6 +37,13 @@ class Kodyt_Checkout_Core
   {
     if (is_admin() && !defined('DOING_AJAX')) return;
 
+    // 1. Fetch the Cash on Delivery (COD) Handling Charge
+    // The second argument (100) is the fallback default value if the user hasn't saved anything yet.
+    $cod_charge = (float) get_option('kodyt_settings_cod_fee', 100);
+
+    // 2. Fetch the Prepaid Order Discount Incentive
+    $prepaid_discount = (float) get_option('kodyt_settings_prepaid_discount', 100);
+
     // Pull directly from the active live WooCommerce user session layer
     $chosen_gateway = WC()->session ? WC()->session->get('chosen_payment_method') : '';
 
@@ -50,19 +57,23 @@ class Kodyt_Checkout_Core
 
     // Use the comprehensive Cart Fees API array instead of the basic positional parameters
     if ('cod' === $chosen_gateway) {
-      $cart->fees_api()->add_fee(array(
-        'id'       => 'kodyt_cod_handling_charge', // UNIQUE HOOK KEY (Blocks compounding loops)
-        'name'     => __('COD Handling Fee', 'kodyt-checkout'),
-        'amount'   => 100, // Flat ₹100 for the full cart
-        'taxable'  => false,
-      ));
+      if ($cod_charge > 0) {
+        $cart->fees_api()->add_fee(array(
+          'id'       => 'kodyt_cod_handling_charge', // UNIQUE HOOK KEY (Blocks compounding loops)
+          'name'     => __('COD Handling Fee', 'kodyt-checkout'),
+          'amount'   => $cod_charge, // Flat ₹100 for the full cart
+          'taxable'  => false,
+        ));
+      }
     } else {
-      $cart->fees_api()->add_fee(array(
-        'id'       => 'kodyt_prepaid_order_discount', // UNIQUE HOOK KEY (Blocks compounding loops)
-        'name'     => __('Prepaid Order Discount', 'kodyt-checkout'),
-        'amount'   => -500, // Flat -₹100 reduction for the full cart
-        'taxable'  => false,
-      ));
+      if ($prepaid_discount > 0) {
+        $cart->fees_api()->add_fee(array(
+          'id'       => 'kodyt_prepaid_order_discount', // UNIQUE HOOK KEY (Blocks compounding loops)
+          'name'     => __('Prepaid Order Discount', 'kodyt-checkout'),
+          'amount'   => -$prepaid_discount, // Flat -₹100 reduction for the full cart
+          'taxable'  => false,
+        ));
+      }
     }
   }
 
