@@ -156,32 +156,28 @@
             <div class="kodyt-total-row"><span>Shipping</span><span style="color: #00b074; font-weight: 600;">FREE</span></div>
 
             <?php
-            // Start with the raw subtotal before any coupons or fees
-            $kodyt_math_total = (float) WC()->cart->get_subtotal();
+            // Get the absolute baseline total of the cart contents after coupons, but BEFORE any fees
+            $kodyt_cart_base = (float) WC()->cart->get_cart_contents_total();
 
-            // Subtract any active coupon amounts safely
-            $applied_coupons = WC()->cart->get_applied_coupons();
-            if (!empty($applied_coupons)) {
-              foreach ($applied_coupons as $coupon_code) {
-                $kodyt_math_total -= (float) WC()->cart->get_coupon_discount_amount($coupon_code);
-              }
-            }
-
-            // Add or subtract our exact active fees
+            // Loop and add/subtract the precise active checkout payment fees
+            $kodyt_fees_total = 0;
             if (function_exists('WC') && WC()->cart) {
               foreach (WC()->cart->get_fees() as $fee) {
-                $kodyt_math_total += (float) $fee->amount;
+                $kodyt_fees_total += (float) $fee->amount;
               }
             }
 
-            // Guarantee order values never drop below zero
-            if ($kodyt_math_total < 0) {
-              $kodyt_math_total = 0;
+            // Combine both values for a perfect matching total
+            $final_calculated_total = $kodyt_cart_base + $kodyt_fees_total;
+
+            // Fail-safe to ensure totals never slip below zero
+            if ($final_calculated_total < 0) {
+              $final_calculated_total = 0;
             }
             ?>
             <div class="kodyt-total-row final-total">
               <span>To Pay</span>
-              <span id="kodyt-calc-grandtotal"><strong><?php echo wc_price($kodyt_math_total); ?></strong></span>
+              <span id="kodyt-calc-grandtotal"><strong><?php echo wc_price($final_calculated_total); ?></strong></span>
             </div>
           </div>
         </div>

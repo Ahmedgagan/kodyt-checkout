@@ -92,20 +92,4 @@
       }
     }
   });
-
-  // Listen to whenever your custom checkout form changes its payment selection rules
-  $(document).on(
-    "change",
-    'input[name="kodyt_payment_method"], input[name="payment_method"]',
-    function () {
-      console.log(
-        "Payment method shift caught. Forcing dynamic fee recalculation...",
-      );
-
-      // Trigger our centralized refresh function that we mapped out in previous steps
-      if (typeof triggerKodytCheckoutRefresh === "function") {
-        triggerKodytCheckoutRefresh();
-      }
-    },
-  );
 })();
