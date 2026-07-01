@@ -9,8 +9,6 @@ class Kodyt_Abandoned_Cart_Coupon_API
   public static function init()
   {
     add_action('rest_api_init', array(__CLASS__, 'register_rest_route'));
-
-    // Hook into the native WooCommerce coupon validation engine
     add_filter('woocommerce_coupon_is_valid', array(__CLASS__, 'restrict_coupon_to_specific_user'), 10, 3);
   }
 
@@ -19,38 +17,72 @@ class Kodyt_Abandoned_Cart_Coupon_API
     register_rest_route(self::$route_namespace, self::$route_path, array(
       'methods'             => 'POST',
       'callback'            => array(__CLASS__, 'handle_coupon_generation_request'),
-      // 'permission_callback' => '__return_true',
-      'permission_callback' => array(__CLASS__, 'validate_native_wc_auth'),
+      'permission_callback' => array(__CLASS__, 'validate_custom_wc_auth'),
     ));
   }
 
-  public static function validate_native_wc_auth()
+  /**
+   * Safe Custom Authenticator: Cryptographically matches WooCommerce keys
+   * even on local HTTP/MAMP environments without SSL.
+   */
+  public static function validate_custom_wc_auth(WP_REST_Request $request)
   {
-    // If Basic Auth failed or no keys were sent, current_user_id() will return 0
-    if (! get_current_user_id()) {
-      return new WP_Error(
-        'rest_forbidden',
-        __('Invalid or missing API credentials.', 'text-domain'),
-        array('status' => 401)
-      );
+    global $wpdb;
+
+    $consumer_key    = '';
+    $consumer_secret = '';
+
+    // 1. Try pulling credentials from Query Parameters (?consumer_key=...&consumer_secret=...)
+    if ($request->get_param('consumer_key') && $request->get_param('consumer_secret')) {
+      $consumer_key    = $request->get_param('consumer_key');
+      $consumer_secret = $request->get_param('consumer_secret');
+    }
+    // 2. Try pulling credentials from the Basic Auth Headers / Server globals
+    else if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
+      $consumer_key    = $_SERVER['PHP_AUTH_USER'];
+      $consumer_secret = $_SERVER['PHP_AUTH_PW'];
+    } else if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+      if (preg_match('/Basic\s+(.*)$/i', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
+        $credentials = explode(':', base64_decode($matches[1]), 2);
+        if (count($credentials) === 2) {
+          $consumer_key    = $credentials[0];
+          $consumer_secret = $credentials[1];
+        }
+      }
     }
 
-    // Check if the authenticated API key user has permission to manage WooCommerce
-    if (! current_user_can('manage_woocommerce')) {
-      return new WP_Error(
-        'rest_forbidden',
-        __('Your API key does not have write permissions.', 'text-domain'),
-        array('status' => 403)
-      );
+    // If no keys were detected anywhere, reject the request immediately
+    if (empty($consumer_key) || empty($consumer_secret)) {
+      return new WP_Error('rest_forbidden', __('Missing API credentials.', 'kodyt-checkout'), array('status' => 401));
     }
 
-    return true; // Authentication and authorization passed!
+    $hashed_key = function_exists('wc_api_hash') ? wc_api_hash($consumer_key) : hash('sha256', $consumer_key);
+    error_log($hashed_key);
+    // 3. Lookup the key data in the native WooCommerce keys table
+    $api_key = $wpdb->get_row($wpdb->prepare(
+      "SELECT * FROM {$wpdb->prefix}woocommerce_api_keys WHERE consumer_key = %s",
+      $hashed_key
+    ));
+
+    if (! $api_key) {
+      return new WP_Error('rest_forbidden', __('Invalid Consumer Key.', 'kodyt-checkout'), array('status' => 401));
+    }
+
+    // 4. Verify Permissions (Must have Write access for POST routes)
+    if ('read' === $api_key->permissions) {
+      return new WP_Error('rest_forbidden', __('Your API key permissions are set to Read-only.', 'kodyt-checkout'), array('status' => 403));
+    }
+
+    // 5. Cryptographically match the consumer secret hash
+    if (! hash_equals($api_key->consumer_secret, $consumer_secret)) {
+      return new WP_Error('rest_forbidden', __('Invalid Consumer Secret mismatch.', 'kodyt-checkout'), array('status' => 401));
+    }
+
+    // 6. Login the user context matching this specific key token
+    wp_set_current_user($api_key->user_id);
+    return true;
   }
 
-
-  /**
-   * Core Controller: Receives a mobile number, looks up the User ID, and builds the coupon.
-   */
   public static function handle_coupon_generation_request(WP_REST_Request $request)
   {
     $mobile_number = sanitize_text_field($request->get_param('mobile'));
@@ -59,12 +91,11 @@ class Kodyt_Abandoned_Cart_Coupon_API
       return new WP_Error('kodyt_missing_mobile', __('A target customer mobile number is required.', 'kodyt-checkout'), array('status' => 400));
     }
 
-    // --- LOOKUP USER ID BY MOBILE PHONE NUMBER ---
-    // Searches standard billing phone records or user account profile meta keys
+    // Lookup user by phone
     $user_query = new WP_User_Query(array(
       'meta_query' => array(
         array(
-          'key'     => 'phone_number', // Adjust if you use a custom OTP tracking key
+          'key'     => 'phone_number',
           'value'   => $mobile_number,
           'compare' => '='
         )
@@ -80,7 +111,6 @@ class Kodyt_Abandoned_Cart_Coupon_API
 
     $user_id = intval($users[0]->ID);
 
-    // Fetch baseline configuration overrides or defaults
     $discount_type  = get_option('kodyt_cart_recovery_coupon_type', 'percent');
     $discount_value = (float) get_option('kodyt_cart_recovery_coupon_value', 10);
 
@@ -100,7 +130,6 @@ class Kodyt_Abandoned_Cart_Coupon_API
       $coupon->set_usage_limit(1);
       $coupon->set_individual_use(true);
 
-      // Save the clean restriction variable inside metadata instead of email arrays
       $coupon->update_meta_data('_kodyt_restricted_user_id', $user_id);
       $coupon->save();
 
@@ -119,18 +148,13 @@ class Kodyt_Abandoned_Cart_Coupon_API
     }
   }
 
-  /**
-   * WooCommerce Interceptor Hook: Validates that only the matched User ID can check out using this coupon code.
-   */
   public static function restrict_coupon_to_specific_user($is_valid, $coupon, $discount)
   {
-    // Pull the protected restriction data if it exists on the item
     $allowed_user_id = $coupon->get_meta('_kodyt_restricted_user_id', true);
 
     if (! empty($allowed_user_id)) {
       $current_user_id = get_current_user_id();
 
-      // Invalidate the coupon entirely if the user is a guest or IDs don't match
       if (empty($current_user_id) || intval($current_user_id) !== intval($allowed_user_id)) {
         return false;
       }
