@@ -981,6 +981,16 @@ jQuery(document).ready(function ($) {
             }
           }
         } catch (e) {}
+        if (window.jQuery) {
+          window
+            .jQuery(document.body)
+            .on(
+              "wc-blocks_added_to_cart wc-blocks_removed_from_cart",
+              function () {
+                if (!isRefreshingView) triggerKodytCheckoutRefresh();
+              },
+            );
+        }
       });
     } else {
       setTimeout(initBlockThemeObserver, 200);
@@ -991,15 +1001,17 @@ jQuery(document).ready(function ($) {
   // APPROACH B: TRACKING LAYER FOR CLASSIC THEMES
   // =========================================================================
   function initClassicThemeObserver() {
-    $(document).ajaxComplete(function (event, xhr, settings) {
-      if (isRefreshingView) return;
-      if (
-        settings.url.indexOf("wc-ajax=update_order_review") !== -1 ||
-        settings.url.indexOf("wc-ajax=remove_from_cart") !== -1
-      ) {
+    if (!window.jQuery) return;
+    const $ = window.jQuery;
+
+    // ◄ FIXED FOR CLASSIC INTERACTION: Listen to native WooCommerce event emitters instead of general network states
+    $(document.body).on(
+      "added_to_cart removed_from_cart updated_cart_totals updated_checkout updated_shipping_method",
+      function () {
+        if (isRefreshingView) return;
         triggerKodytCheckoutRefresh();
-      }
-    });
+      },
+    );
   }
 
   // =========================================================================
