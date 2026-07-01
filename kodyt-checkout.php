@@ -26,6 +26,9 @@ require_once KODYT_CHECKOUT_PATH . 'modules/location/class-kodyt-location-handle
 require_once KODYT_CHECKOUT_PATH . 'modules/marketing/class-kodyt-coupon-handler.php';
 
 require_once KODYT_CHECKOUT_PATH . 'modules/notifications/class-kodyt-notification-handler.php';
+require_once KODYT_CHECKOUT_PATH . 'modules/abandoned_cart/class-kodyt-abandoned-cart-engine.php';
+error_log(KODYT_CHECKOUT_PATH . 'modules/abandoned_cart/class-kodyt-abandoned-cart-coupon-api.php');
+require_once KODYT_CHECKOUT_PATH . 'modules/abandoned_cart/class-kodyt-abandoned-cart-coupon-api.php';
 
 function run_kodyt_checkout_engine()
 {
@@ -40,3 +43,24 @@ function run_kodyt_checkout_engine()
   new Kodyt_Notification_Handler();
 }
 add_action('plugins_loaded', 'run_kodyt_checkout_engine');
+
+// --- CRON REGISTRATION HOOK ATTACHMENTS ---
+register_activation_hook(__FILE__, 'kodyt_activate_abandoned_cart_cron');
+register_deactivation_hook(__FILE__, 'kodyt_deactivate_abandoned_cart_cron');
+
+function kodyt_activate_abandoned_cart_cron()
+{
+  if (! wp_next_scheduled('process_persistent_carts_event')) {
+    // Target 13:30 IST and 01:30 IST next-day runs by anchoring time to 08:00 UTC
+    $target_time_utc = strtotime('today 08:00:00 UTC');
+    if ($target_time_utc < time()) {
+      $target_time_utc = strtotime('tomorrow 08:00:00 UTC');
+    }
+    wp_schedule_event($target_time_utc, 'twice_daily_twelve_hours', 'process_persistent_carts_event');
+  }
+}
+
+function kodyt_deactivate_abandoned_cart_cron()
+{
+  wp_clear_scheduled_hook('process_persistent_carts_event');
+}

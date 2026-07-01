@@ -7,6 +7,7 @@ class Kodyt_Checkout_Settings
   private $design_group   = 'kodyt_checkout_design_group';
   private $whatsapp_group = 'kodyt_checkout_whatsapp_group';
   private $fees_group     = 'kodyt_checkout_fees_group';
+  private $cart_group     = 'kodyt_checkout_cart_group';
 
   public function __construct()
   {
@@ -64,6 +65,10 @@ class Kodyt_Checkout_Settings
 
     foreach ($this->get_fees_fields() as $field) {
       if (isset($field['id'])) register_setting($this->fees_group, $field['id']);
+    }
+
+    foreach ($this->get_cart_fields() as $field) {
+      if (isset($field['id'])) register_setting($this->cart_group, $field['id']);
     }
   }
 
@@ -182,6 +187,7 @@ class Kodyt_Checkout_Settings
         <a href="?page=kodyt-checkout-suite&tab=api" class="nav-tab <?php echo $active_tab === 'api' ? 'nav-tab-active' : ''; ?>"><?php _e('🔌 Connection Setup', 'kodyt-checkout'); ?></a>
         <a href="?page=kodyt-checkout-suite&tab=design" class="nav-tab <?php echo $active_tab === 'design' ? 'nav-tab-active' : ''; ?>"><?php _e('🎨 Brand Customization', 'kodyt-checkout'); ?></a>
         <a href="?page=kodyt-checkout-suite&tab=fees" class="nav-tab <?php echo $active_tab === 'fees' ? 'nav-tab-active' : ''; ?>"><?php _e('💰 Fees & Incentives', 'kodyt-checkout'); ?></a>
+        <a href="?page=kodyt-checkout-suite&tab=cart" class="nav-tab <?php echo $active_tab === 'cart' ? 'nav-tab-active' : ''; ?>"><?php _e('🛒 Abandoned Carts', 'kodyt-checkout'); ?></a>
         <a href="?page=kodyt-checkout-suite&tab=whatsapp" class="nav-tab <?php echo $active_tab === 'whatsapp' ? 'nav-tab-active' : ''; ?>"><?php _e('💬 Customer Notifications', 'kodyt-checkout'); ?></a>
         <a href="?page=kodyt-checkout-suite&tab=vault" class="nav-tab <?php echo $active_tab === 'vault' ? 'nav-tab-active' : ''; ?>"><?php _e('🔐 Security & Compliance', 'kodyt-checkout'); ?></a>
       </nav>
@@ -311,6 +317,9 @@ class Kodyt_Checkout_Settings
             } elseif ('fees' === $active_tab) {
               settings_fields($this->fees_group);
               $current_fields = $this->get_fees_fields();
+            } elseif ('cart' === $active_tab) { // ◄ ADD THIS BLOCK
+              settings_fields($this->cart_group);
+              $current_fields = $this->get_cart_fields();
             }
 
             woocommerce_admin_fields($current_fields);
@@ -321,6 +330,49 @@ class Kodyt_Checkout_Settings
       </div>
     </div>
 <?php
+  }
+
+  // --- ADD THIS METHOD AT THE BOTTOM OF THE CLASS FILE ---
+  private function get_cart_fields()
+  {
+    return array(
+      'cart_section_title' => array(
+        'name' => __('Abandoned Cart Recovery Rules', 'kodyt-checkout'),
+        'type' => 'title',
+        'desc' => __('Automatically rescue lost revenue by generating unique, time-restricted recovery coupons and syncing cart snapshots to your tracking dashboard.', 'kodyt-checkout'),
+        'id'   => 'kodyt_checkout_cart_section_title'
+      ),
+      'coupon_type' => array(
+        'name'     => __('Recovery Incentive Type', 'kodyt-checkout'),
+        'type'     => 'select',
+        'desc'     => __('Choose whether the dynamic coupon offers a percentage deduction or a flat rate discount amount.', 'kodyt-checkout'),
+        'id'       => 'kodyt_cart_recovery_coupon_type',
+        'options'  => array(
+          'percent'    => __('Percentage Discount (%)', 'kodyt-checkout'),
+          'fixed_cart' => __('Fixed Cart Discount (₹)', 'kodyt-checkout'),
+        ),
+        'default'  => 'percent',
+      ),
+      'coupon_value' => array(
+        'name'     => __('Recovery Incentive Value', 'kodyt-checkout'),
+        'type'     => 'number',
+        'desc'     => __('Enter the numerical discount value (e.g., enter 10 for 10% or 200 for ₹200).', 'kodyt-checkout'),
+        'id'       => 'kodyt_cart_recovery_coupon_value',
+        'default'  => '10',
+        'css'      => 'max-width:120px;',
+        'custom_attributes' => array('min' => '0', 'step' => '1')
+      ),
+      'coupon_expiry' => array(
+        'name'     => __('Coupon Expiration Window (Hours)', 'kodyt-checkout'),
+        'type'     => 'number',
+        'desc'     => __('Specify how many hours the recovery coupon remains active once generated (e.g., enter 6 for six hours). Minimum 1 hour.', 'kodyt-checkout'),
+        'id'       => 'kodyt_cart_recovery_coupon_expiry_hours',
+        'default'  => '6',
+        'css'      => 'max-width:120px;',
+        'custom_attributes' => array('min' => '1', 'step' => '1')
+      ),
+      'cart_section_end' => array('type' => 'sectionend', 'id' => 'kodyt_checkout_cart_section_end')
+    );
   }
 
   private function get_fees_fields()
