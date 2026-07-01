@@ -945,20 +945,27 @@ jQuery(document).ready(function ($) {
   }
 
   // =========================================================================
-  // APPROACH A: TRACKING LAYER FOR MODERN BLOCK THEMES (Twenty Twenty-Five/Six)
+  // APPROACH A: TRACKING LAYER FOR MODERN BLOCK THEMES
   // =========================================================================
   function initBlockThemeObserver() {
+    // 1. Hook Gutenberg block specific cart changes globally on the DOM body framework
+    $(document).on(
+      "wc-blocks_added_to_cart wc-blocks_removed_from_cart",
+      function () {
+        console.log("Kodyt Blocks: Intercepted Gutenberg cart mutation event.");
+        triggerKodytCheckoutRefresh();
+      },
+    );
+
+    // 2. Continuous structural item count subscriber fallback mapping
     if (
       window.wp &&
       window.wp.data &&
       typeof window.wp.data.subscribe === "function"
     ) {
-      let previousCartHash = "";
+      let absoluteItemCount = -1;
 
       window.wp.data.subscribe(function () {
-        // Guard clause: stop calculation steps if our own AJAX refresh execution is running
-        if (isRefreshingView) return;
-
         try {
           const cartStore = window.wp.data.select("wc/store/cart");
           if (!cartStore) return;
@@ -966,34 +973,27 @@ jQuery(document).ready(function ($) {
           const cartData = cartStore.getCartData();
           if (!cartData || !cartData.items) return;
 
-          // STRICT HASHING FILTER: Only map properties that mutate cart state items counts or unique identifiers
-          const currentCartHash = cartData.items
-            .map((i) => i.key + "_" + i.quantity)
-            .join("|");
+          let currentQuantitySum = 0;
+          cartData.items.forEach(function (item) {
+            currentQuantitySum += item.quantity;
+          });
 
-          if (currentCartHash !== previousCartHash) {
-            // Only update hash and trigger if it's NOT the initial empty render setup
-            if (previousCartHash !== "") {
-              previousCartHash = currentCartHash;
-              triggerKodytCheckoutRefresh();
-            } else {
-              previousCartHash = currentCartHash; // Seed hash baseline quietly on initialization
-            }
+          if (absoluteItemCount === -1) {
+            absoluteItemCount = currentQuantitySum;
+            return;
+          }
+
+          if (currentQuantitySum !== absoluteItemCount) {
+            absoluteItemCount = currentQuantitySum;
+            triggerKodytCheckoutRefresh();
           }
         } catch (e) {}
-        if (window.jQuery) {
-          window
-            .jQuery(document.body)
-            .on(
-              "wc-blocks_added_to_cart wc-blocks_removed_from_cart",
-              function () {
-                if (!isRefreshingView) triggerKodytCheckoutRefresh();
-              },
-            );
-        }
       });
     } else {
-      setTimeout(initBlockThemeObserver, 200);
+      // Re-poll quietly if block scripts are still rendering downstream
+      setTimeout(function () {
+        if (!window.wp || !window.wp.data) initBlockThemeObserver();
+      }, 500);
     }
   }
 
@@ -1018,13 +1018,9 @@ jQuery(document).ready(function ($) {
   // DOCUMENT DOM STAGE RUNNER
   // =========================================================================
   $(document).ready(function () {
-    // 1. Force state initialization for selection visibility layout elements immediately
     ensureDefaultAddressIsSelected();
 
-    // 2. Fire environment script sniffing routines
-    if (window.wp && window.wp.data) {
-      initBlockThemeObserver();
-    }
+    initBlockThemeObserver();
     initClassicThemeObserver();
   });
 
